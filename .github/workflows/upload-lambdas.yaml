@@ -19,6 +19,21 @@ jobs:
           cd lambdas
           zip -r ../lambda-email.zip ./lambda-email
 
+      - name: Create S3 bucket (if not exists)
+        env:
+          AWS_S3_BUCKET: ${{ secrets.LAMBDA_ARTIFACT_BUCKET }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+        run: |
+          if aws s3api head-bucket --bucket "$AWS_S3_BUCKET" 2>/dev/null; then
+            echo "Bucket $AWS_S3_BUCKET already exists."
+          else
+            aws s3api create-bucket --bucket "$AWS_S3_BUCKET" --region "$AWS_REGION" \
+              --create-bucket-configuration LocationConstraint="$AWS_REGION"
+            echo "Bucket $AWS_S3_BUCKET created."
+          fi
+
       - name: Upload zip to S3
         uses: jakejarvis/s3-sync-action@v0.5.1
         with:
