@@ -17,9 +17,8 @@ jobs:
       - name: Zip Lambda function
         run: |
           cd lambdas
-          # zip -r ../lambda-email.zip ./lambda-email
-          for d in dir1 dir2 dir3; do
-            zip -r "${d}.zip" "$d"
+          for d in */ ; do
+            zip -r "${d%/}.zip" "$d"
           done
 
       - name: Create S3 bucket (if not exists) 
