@@ -1,4 +1,4 @@
-name: Build and Upload Lambda to S3
+name: Create S3,Build and Upload Lambda to S3
 
 on:
   push:
