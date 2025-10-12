@@ -16,9 +16,10 @@ jobs:
 
       - name: Zip Lambda function
         run: |
+          mkdir lambdas-zipped
           cd lambdas
           for d in */ ; do
-            zip -r "${d%/}.zip" "$d"
+            zip -r "${d%/}.zip" "../lambdas-zipped/$d"
           done
 
       - name: Create S3 bucket (if not exists) 
@@ -45,7 +46,7 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
-          SOURCE_DIR: ./lambdas/*.zip           # Root (will look for lambda.zip)
+          SOURCE_DIR: ./lambdas-zipped          # Root (will look for lambda.zip)
           DEST_DIR: lambda-artifacts
 
       # Update this or the next step as needed for CloudFormation deployment
