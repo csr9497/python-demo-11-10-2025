@@ -19,7 +19,7 @@ jobs:
           mkdir lambdas-zipped
           cd lambdas
           for d in */ ; do
-            zip -r "${d%/}.zip" "../lambdas-zipped/$d"
+            zip -r "../lambdas-zipped/${d%/}.zip" "$d"
           done
 
       - name: Create S3 bucket (if not exists) 

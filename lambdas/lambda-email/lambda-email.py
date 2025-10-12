@@ -10,7 +10,7 @@ def lambda_handler(event, context):
         Destination={'ToAddresses': [os.environ['SES_TO']]},
         Message={
             'Subject': {'Data': subject},
-            'Body': {'Text': {'Data': body}}
+            'Body': {'Text': {'Data': body}} 
         }
     )
     return {'status': 'sent'}
