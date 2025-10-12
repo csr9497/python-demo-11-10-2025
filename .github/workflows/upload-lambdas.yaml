@@ -19,7 +19,7 @@ jobs:
           cd lambdas
           zip -r ../lambda-email.zip ./lambda-email
 
-      - name: Create S3 bucket (if not exists)
+      - name: Create S3 bucket (if not exists) 
         env:
           AWS_S3_BUCKET: ${{ secrets.LAMBDA_ARTIFACT_BUCKET }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
