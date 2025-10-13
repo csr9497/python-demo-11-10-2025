@@ -75,4 +75,4 @@ jobs:
 
       - name: Run SQL initialization script
         run: |
-          mysql -h $ENDPOINT -u $AURORA_USER -p$PASSWORD < SQL/user.sql
+          mysql -h $ENDPOINT -u $AURORA_USER -p $PASSWORD < SQL/user.sql

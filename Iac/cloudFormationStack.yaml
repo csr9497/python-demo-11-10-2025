@@ -177,6 +177,7 @@ Resources:
       BackupRetentionPeriod: 7
       PreferredBackupWindow: 07:00-09:00
       PreferredMaintenanceWindow: Mon:09:00-Mon:09:30
+      EnableHttpEndpoint: true
       StorageEncrypted: true
       DBSubnetGroupName: !Ref DBSubnetGroup
       VpcSecurityGroupIds:
@@ -225,30 +226,22 @@ Outputs:
     Description: Endpoint principal del clúster Aurora MySQL
     Value: !GetAtt DBCluster.Endpoint.Address
 
-  ClusterReaderEndpoint:
-    Description: Endpoint de solo lectura (readers) del clúster Aurora MySQL
-    Value: !GetAtt DBCluster.ReadEndpoint.Address
-
-  ClusterPort:
-    Description: Puerto del clúster Aurora MySQL
-    Value: !GetAtt DBCluster.Endpoint.Port
-
   SecretArn:
     Description: ARN del secreto de credenciales en AWS Secrets Manager
     Value: !Ref MyDBSecret
-
-  SecretName:
-    Description: Nombre lógico del secreto generado en AWS Secrets Manager
-    Value: !Sub ${MyDBSecret}
 
   BastionPublicIP:
     Description: IP Pública del Bastion Host para SSH
     Value: !Ref BastionEIP
 
+  MysqlConnectionString:
+    Description: Cadena de conexión MySQL (reemplaza <ENDPOINT_AURORA> por el endpoint real de tu cluster)
+    Value: !Sub "mysql -h ${DBCluster.Endpoint.Address} -u AWS_AURORA_ADMIN -p"
+
   BastionSSHCommand:
     Description: Comando para conectar por SSH (coloca aquí el nombre real de tu archivo .pem en KeyPairName.pem)
-    Value: !Sub "ssh -i ${KeyName}.pem ec2-user@${BastionEIP}"
+    Value: !Sub "ssh -i ${KeyName}.pem ubuntu@${BastionEIP}"
 
   SSHTunnelCommand:
     Description: Comando para túnel SSH (reemplaza <ENDPOINT_AURORA> por el endpoint real de tu cluster)
-    Value: !Sub "ssh -i KeyPairName.pem -L 3306:${DBCluster.Endpoint.Address}:3306 ec2-user@${BastionEIP}"
+    Value: !Sub "ssh -i KeyPairName.pem -L 3306:${DBCluster.Endpoint.Address}:3306 ubuntu@${BastionEIP}"
