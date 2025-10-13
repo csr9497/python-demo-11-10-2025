@@ -118,8 +118,18 @@ jobs:
 
 
       - name: Genera archivo de variables (ejemplo JSON)
-        run: echo '{ "VPC": $VPC_ID, "HOST": $ENDPOINT_RDS_AURORA, "USER":  $AURORA_USER , "PASSWORD": $PASSWORD, IP_BASTION: $IP_BASTION, SECURITY_GROUP: $SECURITY_GROUP, DBName: $DBName, SUBNETIDS : $SUBNETIDS }' > mensaje.json
-
+        run: |
+          echo "{
+            \"VPC\": \"$VPC_ID\",
+            \"HOST\": \"$ENDPOINT_RDS_AURORA\",
+            \"USER\": \"$AURORA_USER\",
+            \"PASSWORD\": \"$PASSWORD\",
+            \"IP_BASTION\": \"$IP_BASTION\",
+            \"SECURITY_GROUP\": \"$SECURITY_GROUP\",
+            \"DBName\": \"$DBName\",
+            \"SUBNETIDS\": \"$SUBNETIDS\"
+          }" > mensaje.json
+          
       - name: Subir artifact
         uses: actions/upload-artifact@v3
         with:
