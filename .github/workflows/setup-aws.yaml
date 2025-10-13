@@ -28,6 +28,7 @@ jobs:
           fi
 
       - name: Create AWS Key Pair
+        condition: steps.check_keypair.outputs.exists == 'false'
         run: |
           aws ec2 create-key-pair --key-name AuroraBastionKey --query 'KeyMaterial' --output text > AuroraBastionKey.pem
           # Opcional: guardar el archivo como artifact
