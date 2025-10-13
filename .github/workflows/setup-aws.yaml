@@ -33,7 +33,7 @@ jobs:
           # Opcional: guardar el archivo como artifact
           
       - name: Upload PEM as artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: bastion-key
           path: AuroraBastionKey.pem
