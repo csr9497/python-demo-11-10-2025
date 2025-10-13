@@ -163,7 +163,7 @@ Resources:
         SecretStringTemplate: '{"username": "AWS_AURORA_ADMIN"}'
         GenerateStringKey: password
         PasswordLength: 16
-        ExcludeCharacters: '`^"\',./{}[]()@:;!?*-$|<>'
+        ExcludeCharacters:  "`^\"',./{}[]()@:;!?*-$|<>"
 
 
   # db cluster
