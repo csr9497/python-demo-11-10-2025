@@ -81,12 +81,12 @@ jobs:
             --query 'SecretString' --output text | jq -r '.password')
           echo "PASSWORD=$password" >> $GITHUB_ENV
 
-      - name: Tunnel SSH to Aurora (in background)
-        run: |
-          nohup ssh -i AuroraBastionKey.pem -N -L
-            -L 3307:$ENDPOINT_RDS_AURORA:3306 \
-            ubuntu@$IP_BASTION &
+      # - name: Tunnel SSH to Aurora (in background)
+      #   run: |
+      #     nohup ssh -i AuroraBastionKey.pem -N -L \
+      #      3307:$ENDPOINT_RDS_AURORA:3306 \
+      #       ubuntu@$IP_BASTION &
 
-      - name: Run SQL initialization script
-        run: |
-          mysql -h $ENDPOINT_RDS_AURORA -u $AURORA_USER -p $PASSWORD < SQL/user.sql
+      # - name: Run SQL initialization script
+      #   run: |
+      #     mysql -h $ENDPOINT_RDS_AURORA -u $AURORA_USER -p $PASSWORD < SQL/user.sql
