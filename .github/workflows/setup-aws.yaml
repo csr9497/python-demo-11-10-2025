@@ -4,7 +4,7 @@ on:
     paths:
       - .github/workflows/*
 jobs:
-  create-keypair:
+  aws-setup:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -64,7 +64,15 @@ jobs:
             --stack-name $RUN_ID \
             --query "Stacks[0].Outputs[?OutputKey=='ClusterEndpoint'].OutputValue" \
             --output text)
-          echo "ENDPOINT=$endpoint" >> $GITHUB_ENV
+          echo "ENDPOINT_RDS_AURORA=$endpoint" >> $GITHUB_ENV
+
+      - name: Get Bastion endpoint
+        run: |
+          ip_bastion=$(aws cloudformation describe-stacks \
+            --stack-name $RUN_ID \
+            --query "Stacks[0].Outputs[?OutputKey=='BastionPublicIP'].OutputValue" \
+            --output text)
+          echo "IP_BASTION=$ip_bastion" >> $GITHUB_ENV
 
       - name: Get Aurora password
         run: |
@@ -73,6 +81,12 @@ jobs:
             --query 'SecretString' --output text | jq -r '.password')
           echo "PASSWORD=$password" >> $GITHUB_ENV
 
+      - name: Tunnel SSH to Aurora (in background)
+        run: |
+          nohup ssh -i AuroraBastionKey.pem -N -L
+            -L 3307:$ENDPOINT_RDS_AURORA:3306 \
+            ubuntu@$IP_BASTION &
+
       - name: Run SQL initialization script
         run: |
-          mysql -h $ENDPOINT -u $AURORA_USER -p $PASSWORD < SQL/user.sql
+          mysql -h $ENDPOINT_RDS_AURORA -u $AURORA_USER -p $PASSWORD < SQL/user.sql

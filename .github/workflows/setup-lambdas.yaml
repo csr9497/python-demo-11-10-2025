@@ -1,4 +1,4 @@
-name: Create S3,Build and Upload Lambda to S3
+name: Setup AWS Lamnbdas and deploy api 
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
       - .github/workflows/upload-lambdas.yml
 
   workflow_run:
-    workflows: ["Create S3,Build and Upload Lambda to S3"]  # El nombre definido en 'name:' del otro workflow
+    workflows: ["Setup AWS and Deploy CloudFormation Stack"]  # El nombre definido en 'name:' del otro workflow
     types:
       - completed
 
