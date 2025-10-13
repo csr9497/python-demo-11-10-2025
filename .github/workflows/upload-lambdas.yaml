@@ -22,6 +22,7 @@ jobs:
             zip -r "../lambdas-zipped/${d%/}.zip" "$d"
           done
 
+
       - name: Create S3 bucket (if not exists) 
         env:
           AWS_S3_BUCKET: ${{ secrets.LAMBDA_ARTIFACT_BUCKET }}
