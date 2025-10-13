@@ -1,0 +1,254 @@
+Parameters:
+
+  ExistingTopicArn:
+    Type: String
+    Default: ''
+    Description: Provide an existing SNS Topic ARN or leave blank to create a new topic
+
+  AvailabilityZones:
+    Type: CommaDelimitedList
+    Default: us-east-2a,us-east-2b
+    Description: List of Availability Zones for the RDS Subnets
+
+  KeyName:
+    Description: Nombre del par de llaves SSH para EC2 (debes crearlo antes en AWS)
+    Type: AWS::EC2::KeyPair::KeyName
+
+Conditions:
+  CreateNewTopic: !Equals
+    - !Ref ExistingTopicArn
+    - ''
+
+Resources:
+
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.192.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: AuroraVPC
+
+  Subnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.192.0.0/20
+      AvailabilityZone: !Select [0, !Ref AvailabilityZones]
+      Tags:
+        - Key: Name
+          Value: AuroraSubnet1
+
+  Subnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.192.16.0/20
+      AvailabilityZone: !Select [1, !Ref AvailabilityZones]
+      Tags:
+        - Key: Name
+          Value: AuroraSubnet2
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: AuroraIGW
+
+  InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: AuroraPublicRouteTable
+
+  Subnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref Subnet1
+      RouteTableId: !Ref PublicRouteTable
+
+  Subnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref Subnet2
+      RouteTableId: !Ref PublicRouteTable
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Subnets para Aurora
+      SubnetIds:
+        - !Ref Subnet1
+        - !Ref Subnet2
+      Tags:
+        - Key: Name
+          Value: AuroraDBSubnetGroup
+
+  DBSecurityGroupAll:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow all trafic for Aurora Cluster
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+
+  BastionSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Bastion SSH access
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0  # Reemplaza por tu IP real para mayor seguridad
+
+  BastionEIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+
+  BastionHost:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-0cfde0ea8edd312d4 
+      InstanceType: t2.micro
+      KeyName: !Ref KeyName
+      SubnetId: !Ref Subnet1
+      SecurityGroupIds:
+        - !Ref BastionSecurityGroup
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          sudo apt-get update && sudo apt-get install mysql-client -y
+      Tags:
+        - Key: Name
+          Value: AuroraBastionHost
+
+  BastionEIPAssociation:
+    Type: AWS::EC2::EIPAssociation
+    Properties:
+      AllocationId: !GetAtt BastionEIP.AllocationId
+      InstanceId: !Ref BastionHost
+
+  # secret manager
+  MyDBSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Description: RDS/AURORA credentials
+      GenerateSecretString:
+        SecretStringTemplate: '{"username": "AWS_AURORA_ADMIN"}'
+        GenerateStringKey: password
+        PasswordLength: 16
+        ExcludeCharacters: '`^"\',./{}[]()@:;!?*-$|<>'
+
+
+  # db cluster
+  DBCluster:
+    Type: AWS::RDS::DBCluster
+    Properties:
+      Engine: aurora-mysql
+      MasterUsername: AWS_AURORA_ADMIN
+      ManageMasterUserPassword: true
+      # MasterUserPassword: mypassword
+      BackupRetentionPeriod: 7
+      PreferredBackupWindow: 07:00-09:00
+      PreferredMaintenanceWindow: Mon:09:00-Mon:09:30
+      StorageEncrypted: true
+      DBSubnetGroupName: !Ref DBSubnetGroup
+      VpcSecurityGroupIds:
+        - !Ref DBSecurityGroupAll
+      # db instance
+  DBInstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      # db cluster reference
+      DBClusterIdentifier: !Ref DBCluster
+      DBInstanceClass: db.r6g.large
+      Engine: aurora-mysql
+
+  # alarm
+  RDSCPU70Alarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Alarm when RDS/AURORA CPU exceeds 70%
+      MetricName: CPUUtilization
+      Namespace: AWS/RDS
+      Statistic: Average
+      Period: 300 # 5 min
+      EvaluationPeriods: 2
+      Threshold: 70
+      ComparisonOperator: GreaterThanThreshold
+      AlarmActions:
+        - !Ref AlarmSNSTopic # SNS topic for notifications
+      Dimensions:
+        - Name: DBInstanceIdentifier
+          Value: !Ref DBInstance # Logical name of your RDS instance
+
+  AlarmSNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Ref ExistingTopicArn
+      Subscription:
+        - Protocol: email
+          Endpoint: cesaraop.12@gmail.com # Replace with your email address
+
+Outputs:
+  AlarmSNSTopicArn:
+    Description: SNS Topic ARN for alarm notifications
+    Value: !Ref AlarmSNSTopic
+
+  ClusterEndpoint:
+    Description: Endpoint principal del clúster Aurora MySQL
+    Value: !GetAtt DBCluster.Endpoint.Address
+
+  ClusterReaderEndpoint:
+    Description: Endpoint de solo lectura (readers) del clúster Aurora MySQL
+    Value: !GetAtt DBCluster.ReadEndpoint.Address
+
+  ClusterPort:
+    Description: Puerto del clúster Aurora MySQL
+    Value: !GetAtt DBCluster.Endpoint.Port
+
+  SecretArn:
+    Description: ARN del secreto de credenciales en AWS Secrets Manager
+    Value: !Ref MyDBSecret
+
+  SecretName:
+    Description: Nombre lógico del secreto generado en AWS Secrets Manager
+    Value: !Sub ${MyDBSecret}
+
+  BastionPublicIP:
+    Description: IP Pública del Bastion Host para SSH
+    Value: !Ref BastionEIP
+
+  BastionSSHCommand:
+    Description: Comando para conectar por SSH (coloca aquí el nombre real de tu archivo .pem en KeyPairName.pem)
+    Value: !Sub "ssh -i ${KeyName}.pem ec2-user@${BastionEIP}"
+
+  SSHTunnelCommand:
+    Description: Comando para túnel SSH (reemplaza <ENDPOINT_AURORA> por el endpoint real de tu cluster)
+    Value: !Sub "ssh -i KeyPairName.pem -L 3306:${DBCluster.Endpoint.Address}:3306 ec2-user@${BastionEIP}"

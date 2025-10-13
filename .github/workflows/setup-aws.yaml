@@ -1,0 +1,77 @@
+name: Create AWS Key Pair
+on:
+  push:
+    paths:
+      - .github/workflows/*
+jobs:
+  create-keypair:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-2
+
+      - name: Check if Key Pair exists
+        id: check_keypair
+        run: |
+          set -e
+          if aws ec2 describe-key-pairs --key-names AuroraBastionKey; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create AWS Key Pair
+        run: |
+          aws ec2 create-key-pair --key-name AuroraBastionKey --query 'KeyMaterial' --output text > AuroraBastionKey.pem
+          # Opcional: guardar el archivo como artifact
+          
+      - name: Upload PEM as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: bastion-key
+          path: AuroraBastionKey.pem
+      
+      - name: Set Name Stacks
+        run: | 
+          echo "RUN_ID=demo-stack-devops-$(date +%Y%m%d%H%M%S)" >> $GITHUB_ENV
+
+      - name: Deploy CloudFormation stack
+        run: |
+          aws cloudformation deploy \
+            --template-file Iac/cloudFormationStack.yaml \
+            --stack-name $RUN_ID \
+            --parameter-overrides KeyName=AuroraBastionKey AvailabilityZones=us-east-2a,us-east-2b 
+
+      - name: Get Aurora Secret ARN
+        run: |
+          secret_arn=$(aws cloudformation describe-stacks \
+            --stack-name $RUN_ID \
+            --query "Stacks[0].Outputs[?OutputKey=='SecretArn'].OutputValue" \
+            --output text)
+          echo "SECRET_ARN=$secret_arn" >> $GITHUB_ENV
+
+      - name: Get Aurora endpoint
+        run: |
+          endpoint=$(aws cloudformation describe-stacks \
+            --stack-name $RUN_ID \
+            --query "Stacks[0].Outputs[?OutputKey=='ClusterEndpoint'].OutputValue" \
+            --output text)
+          echo "ENDPOINT=$endpoint" >> $GITHUB_ENV
+
+      - name: Get Aurora password
+        run: |
+          password=$(aws secretsmanager get-secret-value \
+            --secret-id $SECRET_ARN \
+            --query 'SecretString' --output text | jq -r '.password')
+          echo "PASSWORD=$password" >> $GITHUB_ENV
+
+      - name: Run SQL initialization script
+        run: |
+          mysql -h $ENDPOINT -u $AURORA_USER -p$PASSWORD < SQL/user.sql
