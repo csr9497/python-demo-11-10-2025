@@ -171,8 +171,10 @@ Resources:
     Type: AWS::RDS::DBCluster
     Properties:
       Engine: aurora-mysql
+      DatabaseName: 'db-cluter-demo-devops'
       MasterUsername: AWS_AURORA_ADMIN
       ManageMasterUserPassword: true
+      EnableIAMDatabaseAuthentication: true
       # MasterUserPassword: mypassword
       BackupRetentionPeriod: 7
       PreferredBackupWindow: 07:00-09:00
