@@ -14,6 +14,11 @@ Parameters:
     Description: Nombre del par de llaves SSH para EC2 (debes crearlo antes en AWS)
     Type: AWS::EC2::KeyPair::KeyName
 
+  DBName:
+    Type: String
+    Default: MyDatabase
+    Description: "Nombre de la base de datos inicial en Aurora"
+
 Conditions:
   CreateNewTopic: !Equals
     - !Ref ExistingTopicArn
@@ -289,10 +294,26 @@ Outputs:
   SecretArn:
     Description: ARN del secreto de credenciales en AWS Secrets Manager
     Value: !Ref DatabaseSecret
+  
+  VpcId:
+    Description: VPC ID
+    Value: !Ref VPC
+
+  DBSecurityGroupAllId:
+    Description: Security Group ID that allows all traffic to Aurora
+    Value: !Ref DBSecurityGroupAll
+
+  Subvnets:
+    Description: Subnet IDs used for the Aurora DB Cluster
+    Value: !Join [",", [!Ref Subnet1, !Ref Subnet2]]
 
   BastionPublicIP:
     Description: IP Pública del Bastion Host para SSH
     Value: !Ref BastionEIP
+
+  DBName:
+    Description: Nombre de la base de datos inicial en Aurora
+    Value: !Ref DBName
 
   MysqlConnectionString:
     Description: Cadena de conexión MySQL (reemplaza <ENDPOINT_AURORA> por el endpoint real de tu cluster)

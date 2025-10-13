@@ -15,7 +15,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-2
+          aws-region: ${{ secrets.AWS_REGION }} 
 
       - name: Check if Key Pair exists
         id: check_keypair
@@ -66,6 +66,22 @@ jobs:
             --output text)
           echo "ENDPOINT_RDS_AURORA=$endpoint" >> $GITHUB_ENV
 
+      - name: Get VPC 
+        run: |
+          vpcid=$(aws cloudformation describe-stacks \
+            --stack-name $RUN_ID \
+            --query "Stacks[0].Outputs[?OutputKey=='VpcId'].OutputValue" \
+            --output text)
+          echo "VPC_ID=$vpcid" >> $GITHUB_ENV
+
+      - name: Get Security Group ID 
+        run: |
+          SecurityGroup=$(aws cloudformation describe-stacks \
+            --stack-name $RUN_ID \
+            --query "Stacks[0].Outputs[?OutputKey=='DBSecurityGroupAllId'].OutputValue" \
+            --output text)
+          echo "SECURITY_GROUP=$SecurityGroup" >> $GITHUB_ENV
+
       - name: Get Bastion endpoint
         run: |
           ip_bastion=$(aws cloudformation describe-stacks \
@@ -80,6 +96,35 @@ jobs:
             --secret-id $SECRET_ARN \
             --query 'SecretString' --output text | jq -r '.password')
           echo "PASSWORD=$password" >> $GITHUB_ENV
+
+      - name: Get DB NAME 
+        run: |
+          db_name=$(aws cloudformation describe-stacks \
+            --stack-name $RUN_ID \
+            --query "Stacks[0].Outputs[?OutputKey=='DBName'].OutputValue" \
+            --output text)
+          echo "DBName=$db_name" >> $GITHUB_ENV
+
+
+      - name: Get DB NAME 
+        run: |
+          subnets=$(aws cloudformation describe-stacks \
+            --stack-name $RUN_ID \
+            --query "Stacks[0].Outputs[?OutputKey=='Subvnets'].OutputValue" \
+            --output text)
+          echo "SUBNETIDS=$subnets" >> $GITHUB_ENV
+
+          
+
+
+      - name: Genera archivo de variables (ejemplo JSON)
+        run: echo '{ "VPC": $VPC_ID, "HOST": $ENDPOINT_RDS_AURORA, "USER":  $AURORA_USER , "PASSWORD": $PASSWORD, IP_BASTION: $IP_BASTION, SECURITY_GROUP: $SECURITY_GROUP, DBName: $DBName, SUBNETIDS : $SUBNETIDS }' > mensaje.json
+
+      - name: Subir artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: mensaje-params
+          path: mensaje.json
 
       # - name: Tunnel SSH to Aurora (in background)
       #   run: |

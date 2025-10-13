@@ -21,6 +21,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }} 
+
       - name: Zip Lambda function
         run: |
           mkdir lambdas-zipped
@@ -37,7 +44,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ secrets.AWS_REGION }} 
         run: |
-          if aws s3api head-bucket --bucket "$AWS_S3_BUCKET" 2>/dev/null; then
+          if aws s3api head-bucket --b  ucket "$AWS_S3_BUCKET" 2>/dev/null; then
             echo "Bucket $AWS_S3_BUCKET already exists."
           else
             aws s3api create-bucket --bucket "$AWS_S3_BUCKET" --region "$AWS_REGION" \
@@ -57,12 +64,33 @@ jobs:
           SOURCE_DIR: ./lambdas-zipped          # Root (will look for lambda.zip)
           DEST_DIR: lambda-artifacts
 
+      - name: Descargar artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: mensaje-params
+
+      - name: Leer archivo de variables
+        run: |
+          for key in $(jq -r 'keys[]' datos.json); do
+            value=$(jq -r --arg k "$key" '.[$k]' datos.json)
+            echo "$key=$value" >> $GITHUB_ENV
+          done
+
+            # Prueba: mostrar variables ya exportadas
+            echo "HOST: $HOST"
+            echo "USER: $USER"
+            echo "PASSWORD: $PASSWORD"
+            echo "DATABASE: $DATABASE"
+            echo "SECURITY_GROUP: $SECURITY_GROUP"
+            echo "SUBNETIDS: $SUBNETIDS"
+            
+
       - name: Create Lambda functions and API GatewayId
         run: |
           aws cloudformation deploy \
             --template-file Iac/api.yaml \
             --stack-name lambda-api-stack-$(date +%Y%m%d%H%M%S) \
-            --parameter-overrides AWS_S3_BUCKET=${{ secrets.LAMBDA_ARTIFACT_BUCKET }} \
+            --parameter-overrides AWS_S3_BUCKET=${{ secrets.LAMBDA_ARTIFACT_BUCKET }} HOST=$HOST USER=$USER PASSWORD=$PASSWORD DATABASE=$DATABASE SECURITY_GROUP=$SECURITY_GROUP SUBNETIDS=$SUBNETIDS  \
             --capabilities CAPABILITY_NAMED_IAM
 
       # Update this or the next step as needed for CloudFormation deployment

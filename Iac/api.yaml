@@ -2,6 +2,24 @@ Parameters:
   AWS_S3_BUCKET:
     Type: String
     Description: "S3 Bucket where Lambda deployment packages are stored"
+  HOST:
+    Type: String
+    Description: "Database host"
+  USER:
+    Type: String
+    Description: "Database user"
+  PASSWORD:
+    Type: String
+    Description: "Database password"
+  DATABASE:
+    Type: String
+    Description: "Database name"
+  SECURITY_GROUP:
+    Type: String
+    Description: "Security Group ID for Lambda functions"
+  SubnetIdsParam:
+    Type: CommaDelimitedList
+    Description: Lista de Subnets (por ejemplo: subnet-aaa,subnet-bbb)
 
 Resources:
 
@@ -33,8 +51,14 @@ Resources:
         S3Key: /lambda-artifacts/lambda-get.zip
       Environment:
         Variables:
-          Demo: true
-          # Aquí tus configs de conexión
+          host: !Ref HOST
+          user: !Ref USER
+          password:   !Ref PASSWORD
+          database: !Ref DATABASE
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref SECURITY_GROUP  # Debes definir este security group en tus resources
+        SubnetIds:  !Ref SubnetIdsParam
 
   PostPersonLambda:
     Type: AWS::Lambda::Function
@@ -48,8 +72,14 @@ Resources:
         S3Key: /lambda-artifacts/lambda-post.zip
       Environment:
         Variables:
-          Demo: true
-          # Aquí tus configs de conexión
+          host: !Ref HOST
+          user: !Ref USER
+          password:   !Ref PASSWORD
+          database: !Ref DATABASE
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref SECURITY_GROUP  # Debes definir este security group en tus resources
+        SubnetIds:  !Ref SubnetIdsParam
 
   PersonsApi:
     Type: AWS::ApiGateway::RestApi
