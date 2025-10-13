@@ -1,4 +1,4 @@
-name: Create AWS Key Pair
+name: Setup AWS and Deploy CloudFormation Stack
 on:
   push:
     paths:

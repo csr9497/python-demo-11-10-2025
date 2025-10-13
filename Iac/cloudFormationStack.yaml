@@ -171,7 +171,6 @@ Resources:
     Type: AWS::RDS::DBCluster
     Properties:
       Engine: aurora-mysql
-      DatabaseName: 'db-cluter-demo-devops'
       MasterUsername: AWS_AURORA_ADMIN
       ManageMasterUserPassword: true
       EnableIAMDatabaseAuthentication: true
