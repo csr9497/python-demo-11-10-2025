@@ -1,0 +1,129 @@
+Parameters:
+  AWS_S3_BUCKET:
+    Type: String
+    Description: "S3 Bucket where Lambda deployment packages are stored"
+
+Resources:
+
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AmazonRDSFullAccess
+        - "arn:aws:iam::aws:policy/SecretsManagerReadWrite"
+
+
+  GetPersonLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: lambda-get.handler
+      Role: !Ref LambdaExecutionRole
+      FunctionName: GetPersonLambda
+      Runtime: nodejs18.x
+      Code:
+        S3Bucket: !Ref AWS_S3_BUCKET
+        S3Key: /lambda-artifacts/lambda-get.zip
+      Environment:
+        Variables:
+          Demo: true
+          # Aquí tus configs de conexión
+
+  PostPersonLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: handler-create-person.handler
+      Role: !Ref LambdaExecutionRole
+      FunctionName: PostPersonLambda
+      Runtime: nodejs18.x
+      Code:
+        S3Bucket: !Ref AWS_S3_BUCKET
+        S3Key: /lambda-artifacts/lambda-post.zip
+      Environment:
+        Variables:
+          Demo: true
+          # Aquí tus configs de conexión
+
+  PersonsApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: PersonsAPI
+
+  PersonsResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref PersonsApi
+      ParentId: !GetAtt [PersonsApi, RootResourceId]
+      PathPart: persons
+
+  GetPersonsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: GET
+      ResourceId: !Ref PersonsResource
+      RestApiId: !Ref PersonsApi
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Sub:
+            - arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetPersonLambda.Arn}/invocations
+            - Region: !Ref "AWS::Region"
+      MethodResponses:
+        - StatusCode: 200
+
+  PostPersonsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: POST
+      ResourceId: !Ref PersonsResource
+      RestApiId: !Ref PersonsApi
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Sub:
+            - arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PostPersonLambda.Arn}/invocations
+            - Region: !Ref "AWS::Region"
+      MethodResponses:
+        - StatusCode: 201
+
+  LambdaInvokePermissionGet:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt GetPersonLambda.Arn
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${PersonsApi}/*/GET/persons"
+
+  LambdaInvokePermissionPost:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt PostPersonLambda.Arn
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${PersonsApi}/*/POST/persons"
+
+  PersonsApiStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      RestApiId: !Ref PersonsApi
+      StageName: prod
+      DeploymentId: !Ref PersonsApiDeployment
+
+  PersonsApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - GetPersonsMethod
+      - PostPersonsMethod
+    Properties:
+      RestApiId: !Ref PersonsApi

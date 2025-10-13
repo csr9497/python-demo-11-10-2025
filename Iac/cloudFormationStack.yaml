@@ -154,16 +154,72 @@ Resources:
       AllocationId: !GetAtt BastionEIP.AllocationId
       InstanceId: !Ref BastionHost
 
-  # secret manager
-  MyDBSecret:
+  DatabaseSecretKMSKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: 'KMS Key for Aurora MySQL Secret encryption'
+      KeyPolicy:
+        Statement:
+          - Sid: Enable IAM User Permissions
+            Effect: Allow
+            Principal:
+              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+            Action: 'kms:*'
+            Resource: '*'
+          - Sid: Allow Secrets Manager
+            Effect: Allow
+            Principal:
+              Service: secretsmanager.amazonaws.com
+            Action:
+              - kms:Decrypt
+              - kms:GenerateDataKey
+              - kms:CreateGrant
+              - kms:DescribeKey
+            Resource: '*'
+          - Sid: Allow RDS
+            Effect: Allow
+            Principal:
+              Service: rds.amazonaws.com
+            Action:
+              - kms:Decrypt
+              - kms:GenerateDataKey
+              - kms:CreateGrant
+              - kms:DescribeKey
+            Resource: '*'
+
+  DatabaseSecret:
     Type: AWS::SecretsManager::Secret
     Properties:
-      Description: RDS/AURORA credentials
+      Name: !Sub '${AWS::StackName}-aurora-mysql-credentials'
+      Description: !Sub 'Aurora MySQL master user credentials for ${AWS::StackName}'
+      KmsKeyId: !Ref DatabaseSecretKMSKey
       GenerateSecretString:
-        SecretStringTemplate: '{"username": "AWS_AURORA_ADMIN"}'
-        GenerateStringKey: password
-        PasswordLength: 16
+        SecretStringTemplate: !Sub '{"username": "AWS_AURORA_ADMIN"}'
+        GenerateStringKey: 'password'
+        PasswordLength: 32
         ExcludeCharacters:  "`^\"',./{}[]()@:;!?*-$|<>"
+        RequireEachIncludedType: true
+        IncludeSpace: false
+
+  SecretTargetAttachment:
+    Type: AWS::SecretsManager::SecretTargetAttachment
+    Properties:
+      SecretId: !Ref DatabaseSecret
+      TargetId: !Ref DBCluster
+      TargetType: AWS::RDS::DBCluster
+
+
+
+  # # secret manager
+  # MyDBSecret:
+  #   Type: AWS::SecretsManager::Secret
+  #   Properties:
+  #     Description: RDS/AURORA credentials
+  #     GenerateSecretString:
+  #       SecretStringTemplate: '{"username": "AWS_AURORA_ADMIN"}'
+  #       GenerateStringKey: password
+  #       PasswordLength: 16
+  #       ExcludeCharacters:  "`^\"',./{}[]()@:;!?*-$|<>"
 
 
   # db cluster
@@ -171,10 +227,11 @@ Resources:
     Type: AWS::RDS::DBCluster
     Properties:
       Engine: aurora-mysql
-      MasterUsername: AWS_AURORA_ADMIN
-      ManageMasterUserPassword: true
+      # ManageMasterUserPassword: true
       EnableIAMDatabaseAuthentication: true
-      # MasterUserPassword: mypassword
+      KmsKeyId: !Ref DatabaseSecretKMSKey
+      MasterUsername: !Sub '{{resolve:secretsmanager:${DatabaseSecret}:SecretString:username}}'
+      MasterUserPassword: !Sub '{{resolve:secretsmanager:${DatabaseSecret}:SecretString:password}}'
       BackupRetentionPeriod: 7
       PreferredBackupWindow: 07:00-09:00
       PreferredMaintenanceWindow: Mon:09:00-Mon:09:30
@@ -183,12 +240,14 @@ Resources:
       DBSubnetGroupName: !Ref DBSubnetGroup
       VpcSecurityGroupIds:
         - !Ref DBSecurityGroupAll
-      # db instance
+
+  # db instance
   DBInstance:
     Type: AWS::RDS::DBInstance
     Properties:
       # db cluster reference
       DBClusterIdentifier: !Ref DBCluster
+      PerformanceInsightsKMSKeyId: !Ref DatabaseSecretKMSKey
       DBInstanceClass: db.r6g.large
       Engine: aurora-mysql
 
@@ -229,7 +288,7 @@ Outputs:
 
   SecretArn:
     Description: ARN del secreto de credenciales en AWS Secrets Manager
-    Value: !Ref MyDBSecret
+    Value: !Ref DatabaseSecret
 
   BastionPublicIP:
     Description: IP Pública del Bastion Host para SSH
