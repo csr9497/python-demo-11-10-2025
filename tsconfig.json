@@ -12,5 +12,8 @@
     "forceConsistentCasingInFileNames": true, 
     "isolatedModules": true, 
   },
+  "include": [ 
+    "lambdas/**/*",
+  ],
   "exclude": ["node_modules", "**/*.test.ts"]
 }

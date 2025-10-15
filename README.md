@@ -1,6 +1,5 @@
 # python-demo-11-10-2025
-Demo for code interview 
-
+Demo para Rest Api con lambda , api gateway, rds mysql en aws.  
 
 ```bash
     npm i
@@ -20,3 +19,23 @@ Se necesita establecer los siguientes secrets en github
 - AWS_SECRET_ACCESS_KEY // 
 - AWS_REGION // region
 - LAMBDA_ARTIFACT_BUCKET // s3 
+
+
+
+Para desarrollar es mejor hacer un checkout a una rama que no sea "main" o "develop" y cuando se quiera desplegar en modo de test hacer push a develop, esto generara unos workflows que brindaran un deploy y unas pruebas que de ser pasadas se realizara un pull request y automerge hacia main, luego de eso se realizara un nuevo deploy con los cambios ya en main. Tambien esta configurado en las github actions para que se deploy cuando se haga push a main
+
+
+El archivo Iac/cloudFormationStack.yaml representa este grafico
+![alt text](image-1.png)
+
+El archivo Iac/api.yaml representa esta grafico
+![alt text](image.png)
+
+
+Luego de crearse ambos el resultado es el siguiente:
+![alt text](image-2.png)
+
+el archivo prepare-lambdas-local.sh permite que las lambdas se empaqueten y puedan ser subidas manualmente o desde AWS CLI
+
+
+Para la creacion de la db se utilizo la lambda 'DataBaseCreation' que se encuentra en la carpeta lambdas, tambien se creo otra lambda llamada 'CheckDataBase' para verificar la correcta creacion.
