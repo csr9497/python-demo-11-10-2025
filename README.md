@@ -10,6 +10,37 @@ Se necesita un usurio de aws, se recomienda ingresar a AWS Console y IAM  crear 
 A la hora de crearlo se necesita agregarlo a un grupo, este grupo puede ser creado previamente o en el instante , selecione rol de "	
 AdministratorAccess". Luego de todo crear usuario y en el apartado de 'credenciales de seguridad' se deben generar nuevas claves de acceso, en el panel hay un apartado donde se muestran las actuales. Al crear las llaves se necesita seleccionar en la etapa de 'caso de uso' la opcion de 'CLI' la cual nos permitira realizar comandos con AWS CLI. Luego de haberlas generados necesitamos los valores de 'clave de acceso' y 'clave de accesso secreta' , estos valores se deben copiar para luego introducirlos en los secrets que se usaran en github actions. Para setear secrets para las actions se necesitar ir a 'Settings', en el sidebar seleccion el item 'Secrets and Variables" y luego "Actions"  y ahi se podran agregar las secrets.
 
+Luego de crear el usuario y agregarlo a un grupo se necesita crear un politica que brinde permisos para el deploy del proyecto
+
+→ Politicas => Crear politica:
+
+Cambiar al modo json y pegar lo siguiente
+
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    { "Effect": "Allow", "Action": [
+      "ec2:*",
+      "rds:*",
+      "s3:*",
+      "cloudformation:*",
+      "lambda:*",
+      "iam:PassRole",
+      "iam:GetRole",
+      "iam:CreateRole",
+      "iam:AttachRolePolicy",
+      "secretsmanager:*",
+      "sns:*",
+      "apigateway:*",
+      "cloudwatch:*"
+    ], "Resource": "*" }
+  ]
+}
+
+
+Luego darle nombre a la policita  [ nombre politica ]
+
+volver al menu de usuarios =>  [usuario creado ] => agregar politicas  => Adjuntar politicas directamente => Buscar [nobmre politica ] => agregar permisos
 
 
 
