@@ -4,12 +4,11 @@ on:
   push:
     paths:
       - lambdas-two/**
-      - .github/workflows/setup-lambdas.yml
-
+      - .github/workflows/*
   workflow_run:
     workflows: ["Setup AWS and Deploy CloudFormation Stack"]  # El nombre definido en 'name:' del otro workflow
     types:
-      - completed 
+      - completed
 
 jobs:
 
