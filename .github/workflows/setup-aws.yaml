@@ -106,16 +106,13 @@ jobs:
           echo "DBName=$db_name" >> $GITHUB_ENV
 
 
-      - name: Get DB NAME 
+      - name: Get DB NAME
         run: |
           subnets=$(aws cloudformation describe-stacks \
             --stack-name $RUN_ID \
             --query "Stacks[0].Outputs[?OutputKey=='PrivateSubnets'].OutputValue" \
             --output text)
           echo "SUBNETIDS=$subnets" >> $GITHUB_ENV
-
-          
-
 
       - name: Genera archivo de variables (ejemplo JSON)
         run: |
@@ -145,3 +142,160 @@ jobs:
       # - name: Run SQL initialization script
       #   run: |
       #     mysql -h $ENDPOINT_RDS_AURORA -u $AURORA_USER -p $PASSWORD < SQL/user.sql
+
+  deploy-lambda:
+    runs-on: ubuntu-latest 
+    needs: aws-setup
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }} 
+
+      - name: Use Node.js 
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install TypeScript globally
+        run: npm install -g typescript
+
+      - name : Install JS dependencies
+        run: |
+           npm install
+
+      - name: Zip Lambda function
+        run: |
+          mkdir lambdas-zipped
+          cd lambdas-two
+          for d in */ ; do
+            ./${d}build.sh $d
+          done
+
+
+      - name: Create S3 bucket (if not exists) 
+        env:
+          AWS_S3_BUCKET: ${{ secrets.LAMBDA_ARTIFACT_BUCKET }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }} 
+        run: |
+          if aws s3api head-bucket --bucket "$AWS_S3_BUCKET" 2>/dev/null; then
+            echo "Bucket $AWS_S3_BUCKET already exists."
+          else
+            aws s3api create-bucket --bucket "$AWS_S3_BUCKET" --region "$AWS_REGION" \
+              --create-bucket-configuration LocationConstraint="$AWS_REGION"
+            echo "Bucket $AWS_S3_BUCKET created."
+          fi
+
+      - name: Upload zip to S3
+        uses: jakejarvis/s3-sync-action@v0.5.1
+        with:
+          args: --acl private
+        env:
+          AWS_S3_BUCKET: ${{ secrets.LAMBDA_ARTIFACT_BUCKET }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          SOURCE_DIR: ./lambdas-zipped          # Root (will look for lambda.zip)
+          DEST_DIR: lambda-artifacts
+
+      - name: Descargar artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: mensaje-params
+          path: mensaje.json
+
+      - name: Leer archivo de variables
+        run: |
+          for key in $(jq -r 'keys[]' mensaje.json); do
+            value=$(jq -r --arg k "$key" '.[$k]' mensaje.json)
+            echo "$key=$value" >> $GITHUB_ENV
+          done
+
+            # Prueba: mostrar variables ya exportadas
+            echo "HOST: $HOST"
+            echo "USER: $USER"
+            echo "PASSWORD: $PASSWORD"
+            echo "DATABASE: $DATABASE"
+            echo "SECURITY_GROUP: $SECURITY_GROUP"
+            echo "SUBNETIDS: $SUBNETIDS"
+
+      - name: Create Lambda functions and API GatewayId
+        run: |
+          aws cloudformation deploy \
+            --template-file Iac/api.yaml \
+            --stack-name lambda-api-stack-$(date +%Y%m%d%H%M%S) \
+            --parameter-overrides AWSS3BUCKET=${{ secrets.LAMBDA_ARTIFACT_BUCKET }} HOST=$HOST USER=$USER PASSWORD=$PASSWORD DATABASE=$DATABASE SECURITY_GROUP=$SECURITY_GROUP SUBNETIDS=$SUBNETIDS  \
+            --capabilities CAPABILITY_NAMED_IAM
+
+  test-lambdas:
+    runs-on: ubuntu-latest 
+    needs: deploy-lambda
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }} 
+
+      - name: Ejecuta tests de Lambda desde archivos
+        run: |
+          for testfile in lambda-tests/*.json; do
+            FUNC_NAME=$(basename "$testfile" .json)
+            echo "Probando función $FUNC_NAME con payload de $testfile"
+            aws lambda invoke \
+              --function-name "$FUNC_NAME" \
+              --payload file://"$testfile" \
+              "output_$FUNC_NAME.json"
+            echo "Output de $FUNC_NAME:"
+            cat "output_$FUNC_NAME.json"
+            echo ""
+          done
+
+  test-apai:
+    runs-on: ubuntu-latest
+    needs: test-lambdas
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }} 
+
+      - name: Ejecuta tests de la API (curl) desde archivos
+        env:
+          BASE_URL: ${{ github.event.inputs.api_base_url }}
+        run: |
+          for testfile in api-tests/*.json; do
+            TEST=$(cat "$testfile")
+            ENDPOINT=$(echo "$TEST" | jq -r .path)
+            METHOD=$(echo "$TEST" | jq -r .method)
+            BODY=$(echo "$TEST" | jq -c .body)
+            OUT_FILE="output_$(basename "$testfile" .json).txt"
+            
+            echo "Test: $testfile ($METHOD $ENDPOINT)"
+            
+            if [ "$BODY" != "null" ]; then
+              curl -X "$METHOD" "$BASE_URL$ENDPOINT" -H "Content-Type: application/json" -d "$BODY" -s -w "\n" > "$OUT_FILE"
+            else
+              curl -X "$METHOD" "$BASE_URL$ENDPOINT" -s -w "\n" > "$OUT_FILE"
+            fi
+
+            echo "Respuesta:"
+            cat "$OUT_FILE"
+            echo ""
+          done
