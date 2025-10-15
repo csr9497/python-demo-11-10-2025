@@ -1,0 +1,16 @@
+name: Flujo de trabajo manual
+
+on:
+  workflow_dispatch:
+    inputs:
+      nombre_rama:
+        description: 'Rama en la que se ejecutará'
+        required: true
+        default: 'main'
+
+jobs:
+  ejecutar_trabajo:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Mensaje de confirmación
+        run: echo "El flujo de trabajo se ha ejecutado manualmente en la rama ${{ github.event.inputs.nombre_rama }}"
