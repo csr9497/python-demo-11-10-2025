@@ -439,7 +439,7 @@ jobs:
 
       - name: Ejecuta tests de la API (curl) desde archivos
         env:
-          BASE_URL: ${{APIURL}}
+          BASE_URL: ${APIURL}
         run: |
           for testfile in api-tests/*.json; do
             TEST=$(cat "$testfile")
