@@ -15,6 +15,9 @@ jobs:
       - name: Mensaje de confirmación
         run: echo "El flujo de trabajo se ha ejecutado manualmente en la rama ${{ github.event.inputs.nombre_rama }}"
 
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: List archivos y directorio
         run: |
           pwd
