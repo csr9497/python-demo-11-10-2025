@@ -108,12 +108,20 @@ jobs:
         run: |
           db_name=$(aws cloudformation describe-stacks \
             --stack-name $RUN_ID \
-            --query "Stacks[0].Outputs[?OutputKey=='DBName'].OutputValue" \
+            --query "Stacks[0].Outputs[?OutputKey=='DATABASE'].OutputValue" \
             --output text)
-          echo "DBName=$db_name" >> $GITHUB_ENV
+          echo "DATABASE=$db_name" >> $GITHUB_ENV
+
+      - name: Get DB NAME 
+        run: |
+          db_name=$(aws cloudformation describe-stacks \
+            --stack-name $RUN_ID \
+            --query "Stacks[0].Outputs[?OutputKey=='DBTABLE'].OutputValue" \
+            --output text)
+          echo "DBTABLE=$db_name" >> $GITHUB_ENV
 
 
-      - name: Get DB NAME
+      - name: Get SubnetsIds 
         run: |
           subnets=$(aws cloudformation describe-stacks \
             --stack-name $RUN_ID \
@@ -130,7 +138,8 @@ jobs:
             \"PASSWORD\": \"$PASSWORD\",
             \"IP_BASTION\": \"$IP_BASTION\",
             \"SECURITYGROUP\": \"$SECURITYGROUP\",
-            \"DBName\": \"$DBName\",
+            \"DATABASE\": \"$DATABASE\",
+            \"DBTABLE\": \"$DBTABLE\",
             \"SUBNETIDS\": \"$SUBNETIDS\"
           }" > mensaje.json
 
@@ -237,6 +246,7 @@ jobs:
             echo "USERDB: $USERDB"
             echo "PASSWORD: $PASSWORD"
             echo "DATABASE: $DATABASE"
+            echo "DBTABLE: $DBTABLE"
             echo "SECURITYGROUP: $SECURITYGROUP"
             echo "SUBNETIDS: $SUBNETIDS"
 
@@ -245,7 +255,7 @@ jobs:
           aws cloudformation deploy \
             --template-file Iac/api.yaml \
             --stack-name lambda-api-stack-$(date +%Y%m%d%H%M%S) \
-            --parameter-overrides AWSS3BUCKET=${{ secrets.LAMBDA_ARTIFACT_BUCKET }} HOST=$HOST USERDB=$USERDB PASSWORD=$PASSWORD DATABASE=$DATABASE SECURITYGROUP=$SECURITYGROUP SUBNETIDS=$SUBNETIDS  \
+            --parameter-overrides AWSS3BUCKET=${{ secrets.LAMBDA_ARTIFACT_BUCKET }} HOST=$HOST USERDB=$USERDB PASSWORD=$PASSWORD DATABASE=$DATABASE DBTABLE=$DBTABLE SECURITYGROUP=$SECURITYGROUP SUBNETIDS=$SUBNETIDS  \
             --capabilities CAPABILITY_NAMED_IAM
 
       - name: Invoke Lambda function Creation DB

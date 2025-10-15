@@ -14,6 +14,9 @@ Parameters:
   DATABASE:
     Type: String
     Description: "Database name"
+  DBTABLE:
+    Type: String
+    Description: "Database table name"
   SECURITYGROUP:
     Type: String
     Description: "Security Group ID for Lambda functions"
@@ -52,10 +55,10 @@ Resources:
         S3Key: lambda-artifacts/DataBaseCreation.zip
       Environment:
         Variables:
-          host: !Ref HOST
-          user: !Ref USERDB
-          password:   !Ref PASSWORD
-          database: !Ref DATABASE
+          DB_HOST: !Ref HOST
+          DB_USER: !Ref USERDB
+          DB_PASSWORD:   !Ref PASSWORD
+          DB_NAME: !Ref DATABASE
       VpcConfig:
         SecurityGroupIds:
           - !Ref SECURITYGROUP  # Debes definir este security group en tus resources
@@ -74,10 +77,10 @@ Resources:
         S3Key: lambda-artifacts/CheckDataBase.zip
       Environment:
         Variables:
-          host: !Ref HOST
-          user: !Ref USERDB
-          password:   !Ref PASSWORD
-          database: !Ref DATABASE
+          DB_HOST: !Ref HOST
+          DB_USER: !Ref USERDB
+          DB_PASSWORD:   !Ref PASSWORD
+          DB_NAME: !Ref DATABASE
       VpcConfig:
         SecurityGroupIds:
           - !Ref SECURITYGROUP  # Debes definir este security group en tus resources
@@ -96,10 +99,11 @@ Resources:
         S3Key: lambda-artifacts/GetPersonLambda.zip
       Environment:
         Variables:
-          host: !Ref HOST
-          user: !Ref USERDB
-          password:   !Ref PASSWORD
-          database: !Ref DATABASE
+          DB_HOST: !Ref HOST
+          DB_USER: !Ref USERDB
+          DB_PASSWORD:   !Ref PASSWORD
+          DB_NAME: !Ref DATABASE
+          DB_TABLE: !Ref DBTABLE
       VpcConfig:
         SecurityGroupIds:
           - !Ref SECURITYGROUP  # Debes definir este security group en tus resources
@@ -117,10 +121,12 @@ Resources:
         S3Key: lambda-artifacts/PostPersonLambda.zip
       Environment:
         Variables:
-          host: !Ref HOST
-          user: !Ref USERDB
-          password:   !Ref PASSWORD
-          database: !Ref DATABASE
+          DB_HOST: !Ref HOST
+          DB_USER: !Ref USERDB
+          DB_PASSWORD:   !Ref PASSWORD
+          DB_NAME: !Ref DATABASE
+          DB_TABLE: !Ref DBTABLE
+
       VpcConfig:
         SecurityGroupIds:
           - !Ref SECURITYGROUP  # Debes definir este security group en tus resources

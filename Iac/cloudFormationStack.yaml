@@ -363,6 +363,14 @@ Outputs:
     Description: VPC ID
     Value: !Ref VPC
 
+  DATABASE:
+    Description: Name of the database
+    Value: 'persons_db'
+  
+  DBTABLE:
+    Description: Name of the database table
+    Value: 'persons'
+
   DBSecurityGroupLambda:
     Description: Security Group ID that allows all traffic to Aurora
     Value: !Ref DBSecurityGroupLambda
