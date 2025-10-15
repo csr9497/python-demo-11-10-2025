@@ -172,7 +172,7 @@ jobs:
       - name: Zip Lambda function
         run: |
           mkdir lambdas-zipped
-          cd lambdas-two
+          cd lambdas
           for d in */ ; do
             ./${d}build.sh $d
           done
@@ -210,6 +210,10 @@ jobs:
         with:
           name: mensaje-params
           path: mensaje.json
+
+      - name: Leer archivo 
+        run: | 
+          cat mensaje.json
 
       - name: Leer archivo de variables
         run: |
