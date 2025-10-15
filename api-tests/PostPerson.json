@@ -1,6 +1,6 @@
 {
   "method": "POST",
-  "path": "",
+  "path": "/persons",
   "body": {
     "first_name": "Juan",
     "last_name": "Perez",

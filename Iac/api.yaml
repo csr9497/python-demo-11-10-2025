@@ -318,4 +318,4 @@ Resources:
 Outputs:
   APIURL:
     Description: "URL of the API Gateway"
-    Value: !Sub "https://${PersonsApi}.execute-api.${AWS::Region}.amazonaws.com/prod/persons"
+    Value: !Sub "https://${PersonsApi}.execute-api.${AWS::Region}.amazonaws.com/prod"

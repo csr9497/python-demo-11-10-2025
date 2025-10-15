@@ -1,4 +1,4 @@
 {
   "method": "GET",
-  "path": ""
+  "path": "/persons"
 }
