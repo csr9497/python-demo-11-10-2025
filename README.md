@@ -19,21 +19,25 @@ Cambiar al modo json y pegar lo siguiente
 {
   "Version": "2012-10-17",
   "Statement": [
-    { "Effect": "Allow", "Action": [
-      "ec2:*",
-      "rds:*",
-      "s3:*",
-      "cloudformation:*",
-      "lambda:*",
-      "iam:PassRole",
-      "iam:GetRole",
-      "iam:CreateRole",
-      "iam:AttachRolePolicy",
-      "secretsmanager:*",
-      "sns:*",
-      "apigateway:*",
-      "cloudwatch:*"
-    ], "Resource": "*" }
+    { 
+        "Effect": "Allow", 
+        "Action": [
+            "ec2:*",
+            "rds:*",
+            "s3:*",
+            "cloudformation:*",
+            "lambda:*",
+            "iam:PassRole",
+            "iam:GetRole",
+            "iam:CreateRole",
+            "iam:AttachRolePolicy",
+            "secretsmanager:*",
+            "sns:*",
+            "apigateway:*",
+            "cloudwatch:*",
+            "kms:*",
+        ],
+        "Resource": "*" }
   ]
 }
 

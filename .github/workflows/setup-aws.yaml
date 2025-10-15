@@ -190,7 +190,8 @@ jobs:
            npm install
 
       - name: Type Checking
-        run: npm run type-check # Ej: tsc --noEmit
+        run: | 
+          npm run type-check # Ej: tsc --noEmit
 
       - name: Zip Lambda function
         run: |
