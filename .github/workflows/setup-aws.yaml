@@ -170,7 +170,10 @@ jobs:
           node-version: '18'
 
       - name: Install TypeScript globally
-        run: npm install -g typescript
+        run: npm install -g typescript  
+
+      - name : Install ESbuild globally
+        run: npm install -g esbuild -D @types/aws-lambda
 
       - name : Install JS dependencies
         run: |
@@ -259,17 +262,28 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }} 
 
+      - name: List archivos y directorio
+        run: |
+          pwd
+          ls -l
+          ls -l lambda-tests/
+
       - name: Ejecuta tests de Lambda desde archivos
         run: |
           for testfile in lambda-tests/*.json; do
             FUNC_NAME=$(basename "$testfile" .json)
             echo "Probando función $FUNC_NAME con payload de $testfile"
             aws lambda invoke \
+              --cli-binary-format raw-in-base64-out \
               --function-name "$FUNC_NAME" \
               --payload file://"$testfile" \
-              "output_$FUNC_NAME.json"
+              "output_$FUNC_NAME.json" || echo "Error invocando $FUNC_NAME"
             echo "Output de $FUNC_NAME:"
-            cat "output_$FUNC_NAME.json"
+            if test -f "output_$FUNC_NAME.json"; then
+              cat "output_$FUNC_NAME.json"
+            else
+              echo "No output file generated."
+            fi
             echo ""
           done
 

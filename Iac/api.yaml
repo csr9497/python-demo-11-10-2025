@@ -50,7 +50,7 @@ Resources:
       Code:
         # S3Key: ${AWSS3BUCKET}/lambda-artifacts/lambda-post.zip
         S3Bucket: !Ref AWSS3BUCKET
-        S3Key: lambda-artifacts/test.zip
+        S3Key: lambda-artifacts/ GetPersonLambda.zip
       Environment:
         Variables:
           host: !Ref HOST
@@ -65,13 +65,13 @@ Resources:
   PostPersonLambda:
     Type: AWS::Lambda::Function
     Properties:
-      Handler: handler-create-person.handler
+      Handler: index.handler
       Role: !GetAtt LambdaExecutionRole.Arn
       FunctionName: PostPersonLambda
       Runtime: nodejs18.x
       Code:
         S3Bucket: !Ref AWSS3BUCKET
-        S3Key: lambda-artifacts/test-two.zip
+        S3Key: lambda-artifacts/PostPersonLambda.zip
       Environment:
         Variables:
           host: !Ref HOST
