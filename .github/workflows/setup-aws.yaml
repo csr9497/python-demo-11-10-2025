@@ -379,7 +379,7 @@ jobs:
 
   destroy:
     runs-on: ubuntu-latest 
-    needs: test-apai
+    needs: test-api
     if: github.branches == 'develop'
     steps:
       - name: Checkout code
