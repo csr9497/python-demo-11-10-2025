@@ -1,5 +1,5 @@
 Parameters:
-  AWS_S3_BUCKET:
+  AWSS3BUCKET:
     Type: String
     Description: "S3 Bucket where Lambda deployment packages are stored"
   HOST:
@@ -14,12 +14,12 @@ Parameters:
   DATABASE:
     Type: String
     Description: "Database name"
-  SECURITY_GROUP:
+  SECURITYGROUP:
     Type: String
     Description: "Security Group ID for Lambda functions"
   SubnetIdsParam:
     Type: CommaDelimitedList
-    Description: Lista de Subnets (por ejemplo: subnet-aaa,subnet-bbb)
+    Description: Lista de Subnets
 
 Resources:
 
@@ -35,6 +35,7 @@ Resources:
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
         - arn:aws:iam::aws:policy/AmazonRDSFullAccess
         - "arn:aws:iam::aws:policy/SecretsManagerReadWrite"
 
@@ -42,13 +43,14 @@ Resources:
   GetPersonLambda:
     Type: AWS::Lambda::Function
     Properties:
-      Handler: lambda-get.handler
-      Role: !Ref LambdaExecutionRole
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
       FunctionName: GetPersonLambda
       Runtime: nodejs18.x
       Code:
-        S3Bucket: !Ref AWS_S3_BUCKET
-        S3Key: /lambda-artifacts/lambda-get.zip
+        # S3Key: ${AWSS3BUCKET}/lambda-artifacts/lambda-post.zip
+        S3Bucket: !Ref AWSS3BUCKET
+        S3Key: lambda-artifacts/test.zip
       Environment:
         Variables:
           host: !Ref HOST
@@ -57,19 +59,19 @@ Resources:
           database: !Ref DATABASE
       VpcConfig:
         SecurityGroupIds:
-          - !Ref SECURITY_GROUP  # Debes definir este security group en tus resources
+          - !Ref SECURITYGROUP  # Debes definir este security group en tus resources
         SubnetIds:  !Ref SubnetIdsParam
 
   PostPersonLambda:
     Type: AWS::Lambda::Function
     Properties:
       Handler: handler-create-person.handler
-      Role: !Ref LambdaExecutionRole
+      Role: !GetAtt LambdaExecutionRole.Arn
       FunctionName: PostPersonLambda
       Runtime: nodejs18.x
       Code:
-        S3Bucket: !Ref AWS_S3_BUCKET
-        S3Key: /lambda-artifacts/lambda-post.zip
+        S3Bucket: !Ref AWSS3BUCKET
+        S3Key: lambda-artifacts/test-two.zip
       Environment:
         Variables:
           host: !Ref HOST
@@ -78,7 +80,7 @@ Resources:
           database: !Ref DATABASE
       VpcConfig:
         SecurityGroupIds:
-          - !Ref SECURITY_GROUP  # Debes definir este security group en tus resources
+          - !Ref SECURITYGROUP  # Debes definir este security group en tus resources
         SubnetIds:  !Ref SubnetIdsParam
 
   PersonsApi:
@@ -106,7 +108,7 @@ Resources:
         Uri:
           Fn::Sub:
             - arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetPersonLambda.Arn}/invocations
-            - Region: !Ref "AWS::Region"
+            - Region: ${AWS::Region}
       MethodResponses:
         - StatusCode: 200
 
@@ -123,7 +125,7 @@ Resources:
         Uri:
           Fn::Sub:
             - arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PostPersonLambda.Arn}/invocations
-            - Region: !Ref "AWS::Region"
+            - Region: ${AWS::Region}
       MethodResponses:
         - StatusCode: 201
 

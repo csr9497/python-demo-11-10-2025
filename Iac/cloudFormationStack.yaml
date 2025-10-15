@@ -36,26 +36,6 @@ Resources:
         - Key: Name
           Value: AuroraVPC
 
-  Subnet1:
-    Type: AWS::EC2::Subnet
-    Properties:
-      VpcId: !Ref VPC
-      CidrBlock: 10.192.0.0/20
-      AvailabilityZone: !Select [0, !Ref AvailabilityZones]
-      Tags:
-        - Key: Name
-          Value: AuroraSubnet1
-
-  Subnet2:
-    Type: AWS::EC2::Subnet
-    Properties:
-      VpcId: !Ref VPC
-      CidrBlock: 10.192.16.0/20
-      AvailabilityZone: !Select [1, !Ref AvailabilityZones]
-      Tags:
-        - Key: Name
-          Value: AuroraSubnet2
-
   InternetGateway:
     Type: AWS::EC2::InternetGateway
     Properties:
@@ -69,6 +49,46 @@ Resources:
       VpcId: !Ref VPC
       InternetGatewayId: !Ref InternetGateway
 
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.192.0.0/20
+      AvailabilityZone: !Select [0, !Ref AvailabilityZones]
+      Tags:
+        - Key: Name
+          Value: AuroraPublicSubnet1
+
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.192.16.0/20
+      AvailabilityZone: !Select [1, !Ref AvailabilityZones]
+      Tags:
+        - Key: Name
+          Value: AuroraPublicSubnet2
+
+  PirvateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.192.0.0/20
+      AvailabilityZone: !Select [0, !Ref AvailabilityZones]
+      Tags:
+        - Key: Name
+          Value: AuroraPirvateSubnet1
+
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.192.16.0/20
+      AvailabilityZone: !Select [1, !Ref AvailabilityZones]
+      Tags:
+        - Key: Name
+          Value: AuroraPrivateSubnet2
+
   PublicRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
@@ -76,18 +96,6 @@ Resources:
       Tags:
         - Key: Name
           Value: AuroraPublicRouteTable
-
-  Subnet1RouteTableAssociation:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      SubnetId: !Ref Subnet1
-      RouteTableId: !Ref PublicRouteTable
-
-  Subnet2RouteTableAssociation:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      SubnetId: !Ref Subnet2
-      RouteTableId: !Ref PublicRouteTable
 
   PublicRoute:
     Type: AWS::EC2::Route
@@ -97,18 +105,63 @@ Resources:
       DestinationCidrBlock: 0.0.0.0/0
       GatewayId: !Ref InternetGateway
 
+  PublicSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet1
+      RouteTableId: !Ref PublicRouteTable
+
+  PublicSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet2
+      RouteTableId: !Ref PublicRouteTable
+
+  PrivateRouteTable1:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub
+          - "rtb-private1-${AZ}"
+          - { AZ: !Select [0, !Ref AvailabilityZones] }
+
+  PrivateRouteTable2:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub
+          - "rtb-private2-${AZ}"
+          - { AZ: !Select [1, !Ref AvailabilityZones] }
+
+
+  PrivateSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet1
+      RouteTableId: !Ref PrivateRouteTable1
+
+  PrivateSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet2
+      RouteTableId: !Ref PrivateRouteTable2
+
   DBSubnetGroup:
     Type: AWS::RDS::DBSubnetGroup
     Properties:
       DBSubnetGroupDescription: Subnets para Aurora
       SubnetIds:
-        - !Ref Subnet1
-        - !Ref Subnet2
+        - !Ref PrivateSubnet1
+        - !Ref PrivateSubnet2
       Tags:
         - Key: Name
           Value: AuroraDBSubnetGroup
 
-  DBSecurityGroupAll:
+  DBSecurityGroupClusterRDS:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Allow all trafic for Aurora Cluster
@@ -116,9 +169,25 @@ Resources:
       SecurityGroupIngress:
         - IpProtocol: -1
           CidrIp: 0.0.0.0/0
+        - IpProtocol: -1
+          SourceSecurityGroupId: !Ref DBSecurityGroupLambda
       SecurityGroupEgress:
         - IpProtocol: -1
           CidrIp: 0.0.0.0/0
+
+  DBSecurityGroupLambda:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow trafic for Lambda functions
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: -1
+          SourceSecurityGroupId: !Ref DBSecurityGroupClusterRDS
 
   BastionSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -142,7 +211,7 @@ Resources:
       ImageId: ami-0cfde0ea8edd312d4 
       InstanceType: t2.micro
       KeyName: !Ref KeyName
-      SubnetId: !Ref Subnet1
+      SubnetId: !Ref PublicSubnet1
       SecurityGroupIds:
         - !Ref BastionSecurityGroup
       UserData:
@@ -244,7 +313,7 @@ Resources:
       StorageEncrypted: true
       DBSubnetGroupName: !Ref DBSubnetGroup
       VpcSecurityGroupIds:
-        - !Ref DBSecurityGroupAll
+        - !Ref DBSecurityGroupClusterRDS
 
   # db instance
   DBInstance:
@@ -299,13 +368,13 @@ Outputs:
     Description: VPC ID
     Value: !Ref VPC
 
-  DBSecurityGroupAllId:
+  DBSecurityGroupLambda:
     Description: Security Group ID that allows all traffic to Aurora
-    Value: !Ref DBSecurityGroupAll
+    Value: !Ref DBSecurityGroupLambda
 
-  Subvnets:
-    Description: Subnet IDs used for the Aurora DB Cluster
-    Value: !Join [",", [!Ref Subnet1, !Ref Subnet2]]
+  PrivateSubnets:
+    Description: Private Subnet IDs used for the Aurora DB Cluster
+    Value: !Join [",", [!Ref PrivateSubnet1, !Ref PrivateSubnet2]]
 
   BastionPublicIP:
     Description: IP Pública del Bastion Host para SSH

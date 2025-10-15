@@ -74,11 +74,11 @@ jobs:
             --output text)
           echo "VPC_ID=$vpcid" >> $GITHUB_ENV
 
-      - name: Get Security Group ID 
+      - name: Get Security Group ID for Lambda Configuration
         run: |
           SecurityGroup=$(aws cloudformation describe-stacks \
             --stack-name $RUN_ID \
-            --query "Stacks[0].Outputs[?OutputKey=='DBSecurityGroupAllId'].OutputValue" \
+            --query "Stacks[0].Outputs[?OutputKey=='DBSecurityGroupLambda'].OutputValue" \
             --output text)
           echo "SECURITY_GROUP=$SecurityGroup" >> $GITHUB_ENV
 
@@ -110,7 +110,7 @@ jobs:
         run: |
           subnets=$(aws cloudformation describe-stacks \
             --stack-name $RUN_ID \
-            --query "Stacks[0].Outputs[?OutputKey=='Subvnets'].OutputValue" \
+            --query "Stacks[0].Outputs[?OutputKey=='PrivateSubnets'].OutputValue" \
             --output text)
           echo "SUBNETIDS=$subnets" >> $GITHUB_ENV
 

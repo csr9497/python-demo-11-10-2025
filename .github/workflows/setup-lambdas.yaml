@@ -3,7 +3,7 @@ name: Setup AWS Lamnbdas and deploy api
 on:
   push:
     paths:
-      - lambdas/**
+      - lambdas-two/**
       - .github/workflows/upload-lambdas.yml
 
   workflow_run:
@@ -28,12 +28,24 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }} 
 
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install TypeScript globally
+        run: npm install -g typescript
+
+      - name : Install JS dependencies
+        run: |
+           npm install
+
       - name: Zip Lambda function
         run: |
           mkdir lambdas-zipped
-          cd lambdas
+          cd lambdas-two
           for d in */ ; do
-            zip -r "../lambdas-zipped/${d%/}.zip" "$d"
+            ./${d}build.sh $d
           done
 
 
@@ -65,7 +77,7 @@ jobs:
           DEST_DIR: lambda-artifacts
 
       - name: Descargar artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: mensaje-params
 
