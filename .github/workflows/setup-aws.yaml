@@ -209,16 +209,16 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: mensaje-params
-          path: mensaje.json
+          path: ./artifact
 
       - name: Leer archivo 
         run: | 
-          cat mensaje.json
+          cat ./artifact/mensaje.json
 
       - name: Leer archivo de variables
         run: |
-          for key in $(jq -r 'keys[]' mensaje.json); do
-            value=$(jq -r --arg k "$key" '.[$k]' mensaje.json)
+          for key in $(jq -r 'keys[]' ./artifact/mensaje.json); do
+              value=$(jq -r --arg k "$key" '.[$k]' ./artifact/mensaje.json)
             echo "$key=$value" >> $GITHUB_ENV
           done
 
