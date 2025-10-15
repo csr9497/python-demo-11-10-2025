@@ -9,13 +9,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       user: process.env.DB_USER,
       password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME,
-      
       port: Number(process.env.DB_PORT) || 3306,
     });
 
-    let table = process.env.DB_TABLE;
-    let limit = event.queryStringParameters?.limit || 10;
-    const [rows] = await connection.execute(`SELECT * from ${table} LIMIT ${limit} `);
+    const [rows] = await connection.execute('SELECT NOW() AS now;');
     return {
       statusCode: 200,
       body: JSON.stringify(rows),

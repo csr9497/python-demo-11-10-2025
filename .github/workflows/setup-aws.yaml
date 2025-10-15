@@ -248,6 +248,30 @@ jobs:
             --parameter-overrides AWSS3BUCKET=${{ secrets.LAMBDA_ARTIFACT_BUCKET }} HOST=$HOST USERDB=$USERDB PASSWORD=$PASSWORD DATABASE=$DATABASE SECURITYGROUP=$SECURITYGROUP SUBNETIDS=$SUBNETIDS  \
             --capabilities CAPABILITY_NAMED_IAM
 
+      - name: Invoke Lambda function Creation DB
+        run: |
+          cd lambdas/DataBaseCreation &&
+          aws lambda invoke \
+          --function-name DataBaseCreation \
+          --cli-binary-format raw-in-base64-out \
+          --payload "$(jq -n --arg sqlString "$(cat sql/create.sql)" '{ sqlString: $sqlString }')" \
+          resultado.json &&
+          cat resultado.json
+          
+      - name: Invoke Lamnbda function Check DB
+        run : |
+          aws lambda invoke \
+          --function-name CheckDataBase  \
+          resultado.json &&
+          STATUS=$(cat archivo.json | jq '.statusCode')
+          BODY=$(cat archivo.json | jq -r '.body')
+
+          if [ "$STATUS" -eq 200 ] && echo "$BODY" | grep -q "now"; then
+            echo "Test exitoso"
+          else
+            echo "Test fallido"
+          fi
+
   test-lambdas:
     runs-on: ubuntu-latest 
     needs: deploy-lambda

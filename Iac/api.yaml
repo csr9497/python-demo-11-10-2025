@@ -39,6 +39,49 @@ Resources:
         - arn:aws:iam::aws:policy/AmazonRDSFullAccess
         - "arn:aws:iam::aws:policy/SecretsManagerReadWrite"
 
+  DataBaseCreation:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      FunctionName: DataBaseCreation
+      Runtime: nodejs18.x
+      Code:
+        # S3Key: ${AWSS3BUCKET}/lambda-artifacts/lambda-post.zip
+        S3Bucket: !Ref AWSS3BUCKET
+        S3Key: lambda-artifacts/DataBaseCreation.zip
+      Environment:
+        Variables:
+          host: !Ref HOST
+          user: !Ref USERDB
+          password:   !Ref PASSWORD
+          database: !Ref DATABASE
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref SECURITYGROUP  # Debes definir este security group en tus resources
+        SubnetIds:  !Ref SUBNETIDS
+
+  CheckDataBase:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      FunctionName: CheckDataBase
+      Runtime: nodejs18.x
+      Code:
+        # S3Key: ${AWSS3BUCKET}/lambda-artifacts/lambda-post.zip
+        S3Bucket: !Ref AWSS3BUCKET
+        S3Key: lambda-artifacts/CheckDataBase.zip
+      Environment:
+        Variables:
+          host: !Ref HOST
+          user: !Ref USERDB
+          password:   !Ref PASSWORD
+          database: !Ref DATABASE
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref SECURITYGROUP  # Debes definir este security group en tus resources
+        SubnetIds:  !Ref SUBNETIDS
 
   GetPersonLambda:
     Type: AWS::Lambda::Function
@@ -50,7 +93,7 @@ Resources:
       Code:
         # S3Key: ${AWSS3BUCKET}/lambda-artifacts/lambda-post.zip
         S3Bucket: !Ref AWSS3BUCKET
-        S3Key: lambda-artifacts/ GetPersonLambda.zip
+        S3Key: lambda-artifacts/GetPersonLambda.zip
       Environment:
         Variables:
           host: !Ref HOST
