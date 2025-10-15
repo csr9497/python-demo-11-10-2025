@@ -1,0 +1,8 @@
+{
+  "method": "POST",
+  "path": "/persons",
+  "body": {
+    "name": "John Doe",
+    "age": 30
+  }
+}
