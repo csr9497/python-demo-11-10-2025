@@ -438,9 +438,9 @@ jobs:
             echo "APIURL: $APIURL"
 
       - name: Ejecuta tests de la API (curl) desde archivos
-        env:
-          BASE_URL: ${APIURL}
+          
         run: |
+          echo "BASE_URL= $APIURL" >> $GITHUB_ENV
           for testfile in api-tests/*.json; do
             TEST=$(cat "$testfile")
             ENDPOINT=$(echo "$TEST" | jq -r .path)
