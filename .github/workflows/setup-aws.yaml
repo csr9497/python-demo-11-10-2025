@@ -141,7 +141,8 @@ jobs:
             \"SECURITYGROUP\": \"$SECURITYGROUP\",
             \"DATABASE\": \"$DATABASE\",
             \"DBTABLE\": \"$DBTABLE\",
-            \"SUBNETIDS\": \"$SUBNETIDS\"
+            \"SUBNETIDS\": \"$SUBNETIDS\",
+            \"RUN_ID\": \"$RUN_ID\"
           }" > mensaje.json
 
       - name: Subir artifact
@@ -254,6 +255,7 @@ jobs:
             echo "DBTABLE: $DBTABLE"
             echo "SECURITYGROUP: $SECURITYGROUP"
             echo "SUBNETIDS: $SUBNETIDS"
+            echo "RUN_ID: $RUN_ID"
 
       - name: Set Name Stacks Lambda
         run: | 
@@ -266,6 +268,37 @@ jobs:
             --stack-name $RUN_ID_LAMBDA \
             --parameter-overrides AWSS3BUCKET=${{ secrets.LAMBDA_ARTIFACT_BUCKET }} HOST=$HOST USERDB=$USERDB PASSWORD=$PASSWORD DATABASE=$DATABASE DBTABLE=$DBTABLE SECURITYGROUP=$SECURITYGROUP SUBNETIDS=$SUBNETIDS  \
             --capabilities CAPABILITY_NAMED_IAM
+
+      - name: Get ApiGatewat
+        run: |
+          apiurl=$(aws cloudformation describe-stacks \
+            --stack-name $RUN_ID \
+            --query "Stacks[0].Outputs[?OutputKey=='APIURL'].OutputValue" \
+            --output text)
+          echo "APIURL=$apiurl" >> $GITHUB_ENV
+
+      - name: Genera archivo de variables (ejemplo JSON)
+        run: |
+          echo "{
+            \"VPC\": \"$VPC_ID\",
+            \"HOST\": \"$ENDPOINT_RDS_AURORA\",
+            \"USERDB\": \"$USERDB\",
+            \"PASSWORD\": \"$PASSWORD\",
+            \"IP_BASTION\": \"$IP_BASTION\",
+            \"SECURITYGROUP\": \"$SECURITYGROUP\",
+            \"DATABASE\": \"$DATABASE\",
+            \"DBTABLE\": \"$DBTABLE\",
+            \"SUBNETIDS\": \"$SUBNETIDS\",
+            \"RUN_ID\": \"$RUN_ID\",
+            \"RUN_ID_LAMBDA\": \"$RUN_ID_LAMBDA\",
+            \"APIURL\": \"$APIURL\"
+          }" > mensaje-two.json
+
+      - name: Subir artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mensaje-params-teo
+          path: mensaje-two.json
 
       - name: Invoke Lambda function Creation DB
         run: |
@@ -305,13 +338,35 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }} 
 
-      - name: Get ApiGatewat
+
+      - name: Descargar artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: mensaje-params-two
+          path: ./artifact
+
+      - name: Leer archivo 
+        run: | 
+          cat ./artifact/mensaje-two.json
+
+      - name: Leer archivo de variables
         run: |
-          apiurl=$(aws cloudformation describe-stacks \
-            --stack-name $RUN_ID \
-            --query "Stacks[0].Outputs[?OutputKey=='APIURL'].OutputValue" \
-            --output text)
-          echo "APIURL=$apiurl" >> $GITHUB_ENV
+          for key in $(jq -r 'keys[]' ./artifact/mensaje-two.json); do
+              value=$(jq -r --arg k "$key" '.[$k]' ./artifact/mensaje-two.json)
+            echo "$key=$value" >> $GITHUB_ENV
+          done
+
+            # Prueba: mostrar variables ya exportadas
+            echo "HOST: $HOST"
+            echo "USERDB: $USERDB"
+            echo "PASSWORD: $PASSWORD"
+            echo "DATABASE: $DATABASE"
+            echo "DBTABLE: $DBTABLE"
+            echo "SECURITYGROUP: $SECURITYGROUP"
+            echo "SUBNETIDS: $SUBNETIDS"
+            echo "RUN_ID: $RUN_ID"
+            echo "RUN_ID_LAMBDA: $RUN_ID_LAMBDA"
+            echo "APIURL: $APIURL"
 
       - name: List archivos y directorio
         run: |
@@ -353,6 +408,29 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }} 
 
+      - name: Leer archivo 
+        run: | 
+          cat ./artifact/mensaje-two.json
+
+      - name: Leer archivo de variables
+        run: |
+          for key in $(jq -r 'keys[]' ./artifact/mensaje-two.json); do
+              value=$(jq -r --arg k "$key" '.[$k]' ./artifact/mensaje-two.json)
+            echo "$key=$value" >> $GITHUB_ENV
+          done
+
+            # Prueba: mostrar variables ya exportadas
+            echo "HOST: $HOST"
+            echo "USERDB: $USERDB"
+            echo "PASSWORD: $PASSWORD"
+            echo "DATABASE: $DATABASE"
+            echo "DBTABLE: $DBTABLE"
+            echo "SECURITYGROUP: $SECURITYGROUP"
+            echo "SUBNETIDS: $SUBNETIDS"
+            echo "RUN_ID: $RUN_ID"
+            echo "RUN_ID_LAMBDA: $RUN_ID_LAMBDA"
+            echo "APIURL: $APIURL"
+
       - name: Ejecuta tests de la API (curl) desde archivos
         env:
           BASE_URL: $APIURL
@@ -391,6 +469,30 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }} 
+
+
+      - name: Leer archivo 
+        run: | 
+          cat ./artifact/mensaje-two.json
+
+      - name: Leer archivo de variables
+        run: |
+          for key in $(jq -r 'keys[]' ./artifact/mensaje-two.json); do
+              value=$(jq -r --arg k "$key" '.[$k]' ./artifact/mensaje-two.json)
+            echo "$key=$value" >> $GITHUB_ENV
+          done
+
+            # Prueba: mostrar variables ya exportadas
+            echo "HOST: $HOST"
+            echo "USERDB: $USERDB"
+            echo "PASSWORD: $PASSWORD"
+            echo "DATABASE: $DATABASE"
+            echo "DBTABLE: $DBTABLE"
+            echo "SECURITYGROUP: $SECURITYGROUP"
+            echo "SUBNETIDS: $SUBNETIDS"
+            echo "RUN_ID: $RUN_ID"
+            echo "RUN_ID_LAMBDA: $RUN_ID_LAMBDA"
+            echo "APIURL: $APIURL"
 
       - name: Delete Lambda and API Stack
         run: |
