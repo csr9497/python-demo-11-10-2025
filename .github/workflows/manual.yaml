@@ -6,7 +6,7 @@ on:
       nombre_rama:
         description: 'Rama en la que se ejecutará'
         required: true
-        default: 'main'
+        default: 'main' 
 
 jobs:
   ejecutar_trabajo:
