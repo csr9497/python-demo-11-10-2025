@@ -297,7 +297,7 @@ jobs:
       - name: Subir artifact
         uses: actions/upload-artifact@v4
         with:
-          name: mensaje-params-teo
+          name: mensaje-params-two
           path: mensaje-two.json
 
       - name: Invoke Lambda function Creation DB
