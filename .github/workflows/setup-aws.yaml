@@ -80,7 +80,7 @@ jobs:
             --stack-name $RUN_ID \
             --query "Stacks[0].Outputs[?OutputKey=='DBSecurityGroupLambda'].OutputValue" \
             --output text)
-          echo "SECURITY_GROUP=$SecurityGroup" >> $GITHUB_ENV
+          echo "SECURITYGROUP=$SecurityGroup" >> $GITHUB_ENV
 
       - name: Get Bastion endpoint
         run: |
@@ -122,7 +122,7 @@ jobs:
             \"USER\": \"$AURORA_USER\",
             \"PASSWORD\": \"$PASSWORD\",
             \"IP_BASTION\": \"$IP_BASTION\",
-            \"SECURITY_GROUP\": \"$SECURITY_GROUP\",
+            \"SECURITYGROUP\": \"$SECURITYGROUP\",
             \"DBName\": \"$DBName\",
             \"SUBNETIDS\": \"$SUBNETIDS\"
           }" > mensaje.json
@@ -223,7 +223,7 @@ jobs:
             echo "USER: $USER"
             echo "PASSWORD: $PASSWORD"
             echo "DATABASE: $DATABASE"
-            echo "SECURITY_GROUP: $SECURITY_GROUP"
+            echo "SECURITYGROUP: $SECURITYGROUP"
             echo "SUBNETIDS: $SUBNETIDS"
 
       - name: Create Lambda functions and API GatewayId
@@ -231,7 +231,7 @@ jobs:
           aws cloudformation deploy \
             --template-file Iac/api.yaml \
             --stack-name lambda-api-stack-$(date +%Y%m%d%H%M%S) \
-            --parameter-overrides AWSS3BUCKET=${{ secrets.LAMBDA_ARTIFACT_BUCKET }} HOST=$HOST USER=$USER PASSWORD=$PASSWORD DATABASE=$DATABASE SECURITY_GROUP=$SECURITY_GROUP SUBNETIDS=$SUBNETIDS  \
+            --parameter-overrides AWSS3BUCKET=${{ secrets.LAMBDA_ARTIFACT_BUCKET }} HOST=$HOST USER=$USER PASSWORD=$PASSWORD DATABASE=$DATABASE SECURITYGROUP=$SECURITYGROUP SUBNETIDS=$SUBNETIDS  \
             --capabilities CAPABILITY_NAMED_IAM
 
   test-lambdas:
