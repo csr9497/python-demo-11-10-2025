@@ -96,6 +96,7 @@ jobs:
             echo "SECURITY_GROUP: $SECURITY_GROUP"
             echo "SUBNETIDS: $SUBNETIDS"
             
+            
 
       - name: Create Lambda functions and API GatewayId
         run: |
