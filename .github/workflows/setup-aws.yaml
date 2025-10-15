@@ -2,7 +2,7 @@ name: Setup AWS and Deploy CloudFormation Stack
 on:
   push:
     paths:
-      - .github/workflows/* 
+      - .github/workflows/*  
 jobs:
   aws-setup:
     runs-on: ubuntu-latest
