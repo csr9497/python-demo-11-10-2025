@@ -10,5 +10,6 @@ CREATE TABLE IF NOT EXISTS persons (
   last_name VARCHAR(50) NOT NULL,
   address VARCHAR(50) NOT NULL,
   document_type INT NOT NULL,
-  document_value BIGINT NOT NULL
+  document_value BIGINT NULL,
+  document_value_string VARCHAR(50) NULL
 );

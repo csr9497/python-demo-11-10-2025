@@ -109,6 +109,52 @@ Resources:
           - !Ref SECURITYGROUP  # Debes definir este security group en tus resources
         SubnetIds:  !Ref SUBNETIDS
 
+  PutPersonLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      FunctionName: PutPersonLambda
+      Runtime: nodejs18.x
+      Code:
+        # S3Key: ${AWSS3BUCKET}/lambda-artifacts/lambda-post.zip
+        S3Bucket: !Ref AWSS3BUCKET
+        S3Key: lambda-artifacts/PutPersonLambda.zip
+      Environment:
+        Variables:
+          DB_HOST: !Ref HOST
+          DB_USER: !Ref USERDB
+          DB_PASSWORD:   !Ref PASSWORD
+          DB_NAME: !Ref DATABASE
+          DB_TABLE: !Ref DBTABLE
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref SECURITYGROUP  # Debes definir este security group en tus resources
+        SubnetIds:  !Ref SUBNETIDS
+
+  DeletePersonLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      FunctionName: DeletePersonLambda
+      Runtime: nodejs18.x
+      Code:
+        # S3Key: ${AWSS3BUCKET}/lambda-artifacts/lambda-post.zip
+        S3Bucket: !Ref AWSS3BUCKET
+        S3Key: lambda-artifacts/DeletePersonLambda.zip
+      Environment:
+        Variables:
+          DB_HOST: !Ref HOST
+          DB_USER: !Ref USERDB
+          DB_PASSWORD:   !Ref PASSWORD
+          DB_NAME: !Ref DATABASE
+          DB_TABLE: !Ref DBTABLE
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref SECURITYGROUP  # Debes definir este security group en tus resources
+        SubnetIds:  !Ref SUBNETIDS
+
   PostPersonLambda:
     Type: AWS::Lambda::Function
     Properties:
@@ -144,6 +190,13 @@ Resources:
       ParentId: !GetAtt [PersonsApi, RootResourceId]
       PathPart: persons
 
+  PersonIdResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref PersonsApi
+      ParentId: !Ref PersonsResource
+      PathPart: "{id}"
+
   GetPersonsMethod:
     Type: AWS::ApiGateway::Method
     Properties:
@@ -157,6 +210,40 @@ Resources:
         Uri:
           Fn::Sub:
             - arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetPersonLambda.Arn}/invocations
+            - Region: ${AWS::Region}
+      MethodResponses:
+        - StatusCode: 200
+
+  PutPersonsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: PUT
+      ResourceId: !Ref PersonIdResource
+      RestApiId: !Ref PersonsApi
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Sub:
+            - arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PutPersonLambda.Arn}/invocations
+            - Region: ${AWS::Region}
+      MethodResponses:
+        - StatusCode: 200
+
+  DeletePersonsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: DELETE
+      ResourceId: !Ref PersonIdResource
+      RestApiId: !Ref PersonsApi
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Sub:
+            - arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DeletePersonLambda.Arn}/invocations
             - Region: ${AWS::Region}
       MethodResponses:
         - StatusCode: 200
@@ -194,6 +281,23 @@ Resources:
       Principal: apigateway.amazonaws.com
       SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${PersonsApi}/*/POST/persons"
 
+  LambdaInvokePermissionPut:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt PutPersonLambda.Arn
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${PersonsApi}/*/PUT/persons/*"
+
+
+  LambdaInvokePermissionDelete:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt DeletePersonLambda.Arn
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${PersonsApi}/*/DELETE/persons/*"
+
   PersonsApiStage:
     Type: AWS::ApiGateway::Stage
     Properties:
@@ -206,5 +310,7 @@ Resources:
     DependsOn:
       - GetPersonsMethod
       - PostPersonsMethod
+      - PutPersonsMethod
+      - DeletePersonsMethod
     Properties:
       RestApiId: !Ref PersonsApi

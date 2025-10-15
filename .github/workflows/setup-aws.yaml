@@ -273,8 +273,8 @@ jobs:
           aws lambda invoke \
           --function-name CheckDataBase  \
           resultado.json &&
-          STATUS=$(cat archivo.json | jq '.statusCode')
-          BODY=$(cat archivo.json | jq -r '.body')
+          STATUS=$(cat resultado.json | jq '.statusCode')
+          BODY=$(cat resultado.json | jq -r '.body')
 
           if [ "$STATUS" -eq 200 ] && echo "$BODY" | grep -q "now"; then
             echo "Test exitoso"

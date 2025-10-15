@@ -6,7 +6,7 @@ type PersonType = {
   last_name: string,
   address: string,
   document_type: number,
-  document_value?: number,
+  document_value?: number | string,
   document_value_string?: string
 }
 export const handler: APIGatewayProxyHandler = async (event) => {
@@ -25,23 +25,26 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       throw new Error("DB_TABLE entorno inválido");
     }
 
-    let { first_name, last_name, address, document_type, document_value }: PersonType = JSON.parse(event.body || '{}');
-
-    if (!first_name || !last_name || !address || !document_type || !document_value === undefined) {
+    let person_id = event?.pathParameters?.id
+    if (!person_id) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: "Campos requeridos: first_name,last_name,address,document_type,document_value" }),
+        body: JSON.stringify({ error: "Identificador erroneo" }),
       };
     }
 
-    let SQL_FIELDS_EXCUTE = `first_name,last_name,address,document_type,document_value`;
-    if (document_type === 2) {
-      SQL_FIELDS_EXCUTE = SQL_FIELDS_EXCUTE.replace('document_value', 'document_value_string')
+    let find_person_sql = `SELECT * FROM ${table} WHERE person_id = ?`;
+    const [find_person] = await connection.execute(find_person_sql, [person_id]);
+    if ((find_person as any[]).length === 0) {
+      return {
+        statusCode: 404,
+        body: JSON.stringify({ error: "Persona no encontrada" }),
+      };
     }
 
-    let SQL_EXCUTE = `INSERT INTO ${table} (${SQL_FIELDS_EXCUTE}) VALUES (?, ?, ?,?,?)`
+    let SQL_EXCUTE = `DELETE FROM ${table}  WHERE person_id = ?`
     const [rows] = await connection.execute(
-      SQL_EXCUTE, [first_name, last_name, address, document_type, document_value]
+      SQL_EXCUTE, [person_id]
     );
 
     return {
