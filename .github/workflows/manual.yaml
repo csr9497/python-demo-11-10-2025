@@ -14,3 +14,9 @@ jobs:
     steps:
       - name: Mensaje de confirmación
         run: echo "El flujo de trabajo se ha ejecutado manualmente en la rama ${{ github.event.inputs.nombre_rama }}"
+
+      - name: List archivos y directorio
+        run: |
+          pwd
+          ls -l
+          ls -l lambda-tests/
