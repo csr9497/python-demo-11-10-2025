@@ -68,7 +68,7 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
-      CidrBlock: 10.192.0.0/20
+      CidrBlock: 10.192.32.0/20
       AvailabilityZone: !Select [0, !Ref AvailabilityZones]
       Tags:
         - Key: Name
@@ -78,7 +78,7 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
-      CidrBlock: 10.192.16.0/20
+      CidrBlock: 10.192.48.0/20
       AvailabilityZone: !Select [1, !Ref AvailabilityZones]
       Tags:
         - Key: Name
