@@ -103,7 +103,7 @@ jobs:
           aws cloudformation deploy \
             --template-file Iac/api.yaml \
             --stack-name lambda-api-stack-$(date +%Y%m%d%H%M%S) \
-            --parameter-overrides AWSS3BUCKET=${{ secrets.LAMBDA_ARTIFACT_BUCKET }} HOST=$HOST USER=$USER PASSWORD=$PASSWORD DATABASE=$DATABASE SECURITY_GROUP=$SECURITY_GROUP SUBNETIDS=$SUBNETIDS  \
+            --parameter-overrides AWSS3BUCKET=${{ secrets.LAMBDA_ARTIFACT_BUCKET }} HOST=$HOST USERDB=$USER PASSWORD=$PASSWORD DATABASE=$DATABASE SECURITY_GROUP=$SECURITY_GROUP SUBNETIDS=$SUBNETIDS  \
             --capabilities CAPABILITY_NAMED_IAM
 
       # Update this or the next step as needed for CloudFormation deployment

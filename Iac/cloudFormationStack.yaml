@@ -266,7 +266,7 @@ Resources:
         SecretStringTemplate: !Sub '{"username": "AWS_AURORA_ADMIN"}'
         GenerateStringKey: 'password'
         PasswordLength: 32
-        ExcludeCharacters:  "`^\"',./{}[]()@:;!?*-$|<>"
+        ExcludeCharacters:  "`^\"',./{}[]()@:;!?*-$|<>\\"
         RequireEachIncludedType: true
         IncludeSpace: false
 
@@ -374,7 +374,6 @@ Outputs:
   BastionPublicIP:
     Description: IP Pública del Bastion Host para SSH
     Value: !Ref BastionEIP
-
 
   MysqlConnectionString:
     Description: Cadena de conexión MySQL (reemplaza <ENDPOINT_AURORA> por el endpoint real de tu cluster)

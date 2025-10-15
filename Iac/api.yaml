@@ -5,7 +5,7 @@ Parameters:
   HOST:
     Type: String
     Description: "Database host"
-  USER:
+  USERDB:
     Type: String
     Description: "Database user"
   PASSWORD:
@@ -54,7 +54,7 @@ Resources:
       Environment:
         Variables:
           host: !Ref HOST
-          user: !Ref USER
+          user: !Ref USERDB
           password:   !Ref PASSWORD
           database: !Ref DATABASE
       VpcConfig:
@@ -75,7 +75,7 @@ Resources:
       Environment:
         Variables:
           host: !Ref HOST
-          user: !Ref USER
+          user: !Ref USERDB
           password:   !Ref PASSWORD
           database: !Ref DATABASE
       VpcConfig:

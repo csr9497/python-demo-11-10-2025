@@ -97,6 +97,13 @@ jobs:
             --query 'SecretString' --output text | jq -r '.password')
           echo "PASSWORD=$password" >> $GITHUB_ENV
 
+      - name: Get Aurora User
+        run: |
+          username=$(aws secretsmanager get-secret-value \
+            --secret-id $SECRET_ARN \
+            --query 'SecretString' --output text | jq -r '.username')
+          echo "USERDB=$username" >> $GITHUB_ENV
+
       - name: Get DB NAME 
         run: |
           db_name=$(aws cloudformation describe-stacks \
@@ -119,7 +126,7 @@ jobs:
           echo "{
             \"VPC\": \"$VPC_ID\",
             \"HOST\": \"$ENDPOINT_RDS_AURORA\",
-            \"USER\": \"$AURORA_USER\",
+            \"USERDB\": \"$USERDB\",
             \"PASSWORD\": \"$PASSWORD\",
             \"IP_BASTION\": \"$IP_BASTION\",
             \"SECURITYGROUP\": \"$SECURITYGROUP\",
@@ -224,7 +231,7 @@ jobs:
 
             # Prueba: mostrar variables ya exportadas
             echo "HOST: $HOST"
-            echo "USER: $USER"
+            echo "USERDB: $USERDB"
             echo "PASSWORD: $PASSWORD"
             echo "DATABASE: $DATABASE"
             echo "SECURITYGROUP: $SECURITYGROUP"
@@ -235,7 +242,7 @@ jobs:
           aws cloudformation deploy \
             --template-file Iac/api.yaml \
             --stack-name lambda-api-stack-$(date +%Y%m%d%H%M%S) \
-            --parameter-overrides AWSS3BUCKET=${{ secrets.LAMBDA_ARTIFACT_BUCKET }} HOST=$HOST USER=$USER PASSWORD=$PASSWORD DATABASE=$DATABASE SECURITYGROUP=$SECURITYGROUP SUBNETIDS=$SUBNETIDS  \
+            --parameter-overrides AWSS3BUCKET=${{ secrets.LAMBDA_ARTIFACT_BUCKET }} HOST=$HOST USERDB=$USERDB PASSWORD=$PASSWORD DATABASE=$DATABASE SECURITYGROUP=$SECURITYGROUP SUBNETIDS=$SUBNETIDS  \
             --capabilities CAPABILITY_NAMED_IAM
 
   test-lambdas:
