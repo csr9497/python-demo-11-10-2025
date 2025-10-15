@@ -17,7 +17,7 @@ Parameters:
   SECURITYGROUP:
     Type: String
     Description: "Security Group ID for Lambda functions"
-  SUBNETIDSPARAM:
+  SUBNETIDS:
     Type: CommaDelimitedList
     Description: Lista de Subnets
 
@@ -60,7 +60,7 @@ Resources:
       VpcConfig:
         SecurityGroupIds:
           - !Ref SECURITYGROUP  # Debes definir este security group en tus resources
-        SubnetIds:  !Ref SUBNETIDSPARAM
+        SubnetIds:  !Ref SUBNETIDS
 
   PostPersonLambda:
     Type: AWS::Lambda::Function
@@ -81,7 +81,7 @@ Resources:
       VpcConfig:
         SecurityGroupIds:
           - !Ref SECURITYGROUP  # Debes definir este security group en tus resources
-        SubnetIds:  !Ref SUBNETIDSPARAM
+        SubnetIds:  !Ref SUBNETIDS
 
   PersonsApi:
     Type: AWS::ApiGateway::RestApi
