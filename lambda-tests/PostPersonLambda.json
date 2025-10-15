@@ -1,5 +1,7 @@
 {
-  "name": "Juan Perez",
-  "age": 32,
-  "email": "juan.perez@email.com"
+  "first_name": "Juan",
+  "last_name" : "Perez",
+  "document_type": 1,
+  "document_value": 12345678,
+  "address": "lima"
 }

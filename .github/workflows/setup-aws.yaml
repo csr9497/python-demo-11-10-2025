@@ -305,6 +305,14 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }} 
 
+      - name: Get ApiGatewat
+        run: |
+          apiurl=$(aws cloudformation describe-stacks \
+            --stack-name $RUN_ID \
+            --query "Stacks[0].Outputs[?OutputKey=='APIURL'].OutputValue" \
+            --output text)
+          echo "APIURL=$apiurl" >> $GITHUB_ENV
+
       - name: List archivos y directorio
         run: |
           pwd
@@ -330,7 +338,7 @@ jobs:
             echo ""
           done
 
-  test-apai:
+  test-api:
 
     runs-on: ubuntu-latest
     needs: test-lambdas
@@ -347,7 +355,7 @@ jobs:
 
       - name: Ejecuta tests de la API (curl) desde archivos
         env:
-          BASE_URL: ${{ github.event.inputs.api_base_url }}
+          BASE_URL: $APIURL
         run: |
           for testfile in api-tests/*.json; do
             TEST=$(cat "$testfile")

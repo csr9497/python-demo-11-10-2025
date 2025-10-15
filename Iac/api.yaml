@@ -314,3 +314,8 @@ Resources:
       - DeletePersonsMethod
     Properties:
       RestApiId: !Ref PersonsApi
+
+Outputs:
+  APIURL:
+    Description: "URL of the API Gateway"
+    Value: !Sub "https://${PersonsApi}.execute-api.${AWS::Region}.amazonaws.com/prod/persons"

@@ -1,8 +1,11 @@
 {
   "method": "POST",
-  "path": "/persons",
+  "path": "",
   "body": {
-    "name": "John Doe",
-    "age": 30
+    "first_name": "Juan",
+    "last_name": "Perez",
+    "document_type": 1,
+    "document_value": 12345678,
+    "address": "lima"
   }
 }
