@@ -24,12 +24,12 @@ jobs:
           
       - name: Leer archivo 
         run: | 
-          cat ./artifact/mensaje-two.json
+          cat ./mensaje-two.json
 
       - name: Leer archivo de variables
         run: |
-          for key in $(jq -r 'keys[]' ./artifact/mensaje-two.json); do
-              value=$(jq -r --arg k "$key" '.[$k]' ./artifact/mensaje-two.json)
+          for key in $(jq -r 'keys[]' ./mensaje-two.json); do
+              value=$(jq -r --arg k "$key" '.[$k]' ./mensaje-two.json)
             echo "$key=$value" >> $GITHUB_ENV
           done
 
@@ -91,12 +91,12 @@ jobs:
 
       - name: Leer archivo 
         run: | 
-          cat ./artifact/mensaje-two.json
+          cat ./mensaje-two.json
 
       - name: Leer archivo de variables
         run: |
-          for key in $(jq -r 'keys[]' ./artifact/mensaje-two.json); do
-              value=$(jq -r --arg k "$key" '.[$k]' ./artifact/mensaje-two.json)
+          for key in $(jq -r 'keys[]' ./mensaje-two.json); do
+              value=$(jq -r --arg k "$key" '.[$k]' ./mensaje-two.json)
             echo "$key=$value" >> $GITHUB_ENV
           done
 
@@ -160,12 +160,12 @@ jobs:
 
       - name: Leer archivo 
         run: | 
-          cat ./artifact/mensaje-two.json
+          cat ./mensaje-two.json
 
       - name: Leer archivo de variables
         run: |
-          for key in $(jq -r 'keys[]' ./artifact/mensaje-two.json); do
-              value=$(jq -r --arg k "$key" '.[$k]' ./artifact/mensaje-two.json)
+          for key in $(jq -r 'keys[]' ./mensaje-two.json); do
+              value=$(jq -r --arg k "$key" '.[$k]' ./mensaje-two.json)
             echo "$key=$value" >> $GITHUB_ENV
           done
 
