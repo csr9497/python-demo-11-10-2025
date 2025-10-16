@@ -272,7 +272,7 @@ jobs:
       - name: Get ApiGatewat
         run: |
           apiurl=$(aws cloudformation describe-stacks \
-            --stack-name $RUN_ID \
+            --stack-name $RUN_ID_LAMBDA \
             --query "Stacks[0].Outputs[?OutputKey=='APIURL'].OutputValue" \
             --output text)
           echo "APIURL=$apiurl" >> $GITHUB_ENV
