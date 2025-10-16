@@ -116,6 +116,7 @@ jobs:
           
         run: |
           echo "BASE_URL=$APIURL" >> $GITHUB_ENV;
+          echo $BASE_URL;
           for testfile in api-tests/*.json; do
             TEST=$(cat "$testfile")
             ENDPOINT=$(echo "$TEST" | jq -r .path)
