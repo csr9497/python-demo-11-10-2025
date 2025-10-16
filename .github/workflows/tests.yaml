@@ -1,9 +1,9 @@
-name: Setup AWS and Deploy CloudFormation Stack
+name: Tests lambdas and API
 on:
-  push:
-    branches:
-      - main
-      - develop
+    workflow_run:
+      workflows: ["Setup AWS and Deploy CloudFormation Stack v2"]
+      types:
+        - completed
 jobs:
   test-lambdas:
     runs-on: ubuntu-latest 

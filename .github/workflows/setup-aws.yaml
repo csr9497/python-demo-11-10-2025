@@ -1,4 +1,4 @@
-name: Setup AWS and Deploy CloudFormation Stack
+name: Setup AWS and Deploy CloudFormation Stack v2
 on:
   push:
     branches:
@@ -151,6 +151,10 @@ jobs:
           name: mensaje-params
           path: mensaje.json
 
+      - name: Cat artifact
+        run: |
+          cat mensaje.json
+
       # - name: Tunnel SSH to Aurora (in background)
       #   run: |
       #     nohup ssh -i AuroraBastionKey.pem -N -L \
@@ -281,7 +285,7 @@ jobs:
         run: |
           echo "{
             \"VPC\": \"$VPC_ID\",
-            \"HOST\": \"$ENDPOINT_RDS_AURORA\",
+            \"HOST\": \"$HOST\",
             \"USERDB\": \"$USERDB\",
             \"PASSWORD\": \"$PASSWORD\",
             \"IP_BASTION\": \"$IP_BASTION\",
